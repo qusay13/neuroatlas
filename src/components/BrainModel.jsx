@@ -31,6 +31,8 @@ function getRegionData(obj) {
   return null;
 }
 
+const BRAIN_MODEL_URL = `${import.meta.env.BASE_URL}brain.glb`;
+
 export default function BrainModel({
   onSelectRegion,
   onHoverRegion,
@@ -39,7 +41,7 @@ export default function BrainModel({
   hoveredRegion,
   cortexOpacity = 1.0,
 }) {
-  const { scene } = useGLTF("/brain.glb");
+  const { scene } = useGLTF(BRAIN_MODEL_URL);
   const meshMaterials = useRef(new Map());
   const meshColors = useRef(new Map());
 
@@ -171,4 +173,4 @@ export default function BrainModel({
   );
 }
 
-useGLTF.preload("/brain.glb");
+useGLTF.preload(BRAIN_MODEL_URL);
