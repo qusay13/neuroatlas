@@ -153,6 +153,11 @@ export default function ResearchGuideView() {
               مراجع نتر للتشريح العصبي، أطلس كاندرل وشوارتز للعلوم العصبية، ومعايير الجمعية الأمريكية لطب الأعصاب (AAN).
             </li>
           </ul>
+
+          <div className="p-3 rounded-lg bg-surface-container border border-secondary/20 flex items-center gap-2 text-xs text-secondary font-medium">
+            <span className="material-symbols-outlined text-base">psychology</span>
+            <span>شارك ببناء الموقع المختص عمر فهد الشمري</span>
+          </div>
         </div>
       </div>
     </div>

@@ -752,14 +752,20 @@ export default function App() {
                 </div>
 
                 {/* اعتمادية المعايير السريرية */}
-                <div className="flex items-center gap-space-xs text-on-surface-variant/70 font-body-sm text-body-sm bg-surface-container-lowest/60 px-space-md py-1 rounded-lg border border-outline-variant/10">
-                  <span className="material-symbols-outlined text-secondary text-[16px]">
-                    verified
-                  </span>
-                  <span>
-                    البيانات مستندة إلى المراجع الأكاديمية لطب الأعصاب والتشريح العصبي السريري
-                    (Clinical Neuroanatomy Reference Standard)
-                  </span>
+                <div className="flex flex-col items-start gap-1 text-on-surface-variant/70 font-body-sm text-body-sm bg-surface-container-lowest/60 px-space-md py-1.5 rounded-lg border border-outline-variant/10">
+                  <div className="flex items-center gap-space-xs">
+                    <span className="material-symbols-outlined text-secondary text-[16px]">
+                      verified
+                    </span>
+                    <span>
+                      البيانات مستندة إلى المراجع الأكاديمية لطب الأعصاب والتشريح العصبي السريري
+                      (Clinical Neuroanatomy Reference Standard)
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-secondary font-medium flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">psychology</span>
+                    <span>شارك ببناء الموقع المختص عمر فهد الشمري</span>
+                  </div>
                 </div>
               </footer>
             </div>
@@ -832,6 +838,10 @@ export default function App() {
                 <li>• Talairach &amp; Tournoux Stereotaxic Co-planar Grid System</li>
                 <li>• Federative International Programme on Anatomical Terminology (FIPAT)</li>
               </ul>
+              <div className="pt-2 text-xs text-secondary font-medium border-t border-outline-variant/15 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                <span>شارك ببناء الموقع المختص عمر فهد الشمري</span>
+              </div>
             </div>
             <div className="space-y-space-xs">
               <div className="font-title-sm text-title-sm text-on-surface">
