@@ -14,6 +14,7 @@ import DiagnosticModeView from "./components/views/DiagnosticModeView";
 import NeuroScalesView from "./components/views/NeuroScalesView";
 import ResearchGuideView from "./components/views/ResearchGuideView";
 import PsychiatricDisordersView from "./components/views/PsychiatricDisordersView";
+import ClinicalDetailsPanel from "./components/ClinicalDetailsPanel";
 
 const NAV_ITEMS_ACADEMIC = [
   { id: "explorer", label: "المستكشف الثلاثي الأبعاد", icon: "view_in_ar" },
@@ -495,268 +496,64 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* بطاقة الفحص السريري العلمية الزجاجية على اليسار (Left Scientific Card) */}
-                <div className="lg:col-span-5 xl:col-span-4 w-full flex flex-col pointer-events-auto order-1 lg:order-2">
-                  {/* زر تبديل إظهار/إخفاء تفاصيل الفص في الجوال */}
-                  <div className="lg:hidden flex justify-end mb-1">
-                    <button
-                      onClick={() => setMobileDetailsOpen(!mobileDetailsOpen)}
-                      className="px-2.5 py-1 rounded-lg bg-surface-container-high/95 backdrop-blur-md border border-outline-variant/30 text-[11px] font-semibold flex items-center gap-1 text-on-surface shadow-md pointer-events-auto"
-                    >
-                      <span className="material-symbols-outlined text-secondary text-[15px]">
-                        {mobileDetailsOpen ? "expand_more" : "clinical_notes"}
-                      </span>
-                      <span>{mobileDetailsOpen ? "تصغير اللوحة السريرية" : `بيانات ${currentLobe.title}`}</span>
-                    </button>
+                {/* بطاقة الفحص السريري لسطح المكتب (Desktop Only Floating Card) */}
+                <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 w-full flex-col pointer-events-auto order-1 lg:order-2">
+                  <ClinicalDetailsPanel
+                    currentLobe={currentLobe}
+                    selectedRegion={selectedRegion}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    isIsolatingTracts={isIsolatingTracts}
+                    onToggleIsolate={handleToggleIsolate}
+                    isMobileSheet={false}
+                  />
+                </div>
+
+                {/* شريط معلومات الفص السريع في الجوال (Mobile Floating Summary Bar) */}
+                <div className="lg:hidden pointer-events-auto w-full bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-2.5 shadow-xl flex items-center justify-between gap-2 order-1">
+                  <div
+                    className="flex items-center gap-2 min-w-0 cursor-pointer"
+                    onClick={() => setMobileDetailsOpen(true)}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: currentLobe.highlightColor }}
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-on-surface truncate">
+                        {selectedRegion ? selectedRegion.name_ar : currentLobe.title}
+                      </div>
+                      <div className="text-[10px] text-outline font-mono truncate">
+                        {selectedRegion ? selectedRegion.name_en : currentLobe.latin} • {currentLobe.volume}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className={`transition-all duration-300 ${!mobileDetailsOpen ? "hidden lg:flex" : "flex"} flex-col w-full h-[380px] sm:h-[480px] lg:h-[580px] max-h-[50vh] lg:max-h-[68vh]`}>
-                    <div className="relative w-full h-full flex flex-col rounded-xl bg-surface-container/90 backdrop-blur-xl shadow-2xl overflow-hidden border border-outline-variant/30">
-                      {/* ترويسة البطاقة */}
-                      <div className="p-space-sm sm:p-space-md bg-surface-container-high/90 flex flex-col gap-space-xs border-b border-outline-variant/30">
-                      <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 rounded font-label-sm text-label-sm bg-secondary-container text-on-secondary-container tracking-wider">
-                          {selectedRegion
-                            ? `SUBREGION: ${selectedRegion.name_en.toUpperCase()}`
-                            : currentLobe.tag}
-                        </span>
-                        <div className="flex items-center gap-1 font-label-sm text-label-sm text-secondary font-mono">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full bg-secondary ${
-                              isIsolatingTracts ? "bg-tertiary" : "animate-ping"
-                            }`}
-                          ></span>
-                          <span className="whitespace-nowrap font-mono text-[11px]">
-                            {isIsolatingTracts
-                              ? "TRACT ISOLATED"
-                              : selectedRegion
-                              ? "FOCAL INSPECTION"
-                              : "ACTIVE INSPECTION"}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={handleToggleIsolate}
+                      className={`p-1.5 rounded-lg text-xs transition-colors flex items-center justify-center ${
+                        isIsolatingTracts
+                          ? "bg-secondary text-on-secondary shadow-sm"
+                          : "bg-surface-container-high text-on-surface"
+                      }`}
+                      title={isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار"}
+                    >
+                      <span className="material-symbols-outlined text-[17px]">
+                        {isIsolatingTracts ? "flare" : "timeline"}
+                      </span>
+                    </button>
 
-                      <div className="mt-1 flex items-baseline justify-between">
-                        <div>
-                          <h1 className="font-headline-md text-headline-md text-on-surface tracking-tight">
-                            {selectedRegion ? selectedRegion.name_ar : currentLobe.title}
-                          </h1>
-                          <span className="font-label-md text-label-md text-on-surface-variant font-mono">
-                            {selectedRegion ? selectedRegion.name_en : currentLobe.latin}
-                          </span>
-                        </div>
-                        <div className="text-left font-mono">
-                          <span className="text-outline font-label-sm text-label-sm block">
-                            الحجم النسبي
-                          </span>
-                          <span className="font-data-metric text-data-metric text-secondary leading-none">
-                            {currentLobe.volume}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* أزرار التبويبات الثلاثة للطبقات السريرية */}
-                    <div className="flex items-center bg-surface-container-low px-space-md gap-space-sm pt-space-xs border-b border-outline-variant/20">
-                      <button
-                        className={`detail-tab-btn py-2 px-space-xs font-title-sm text-title-sm transition-colors ${
-                          activeTab === "overview"
-                            ? "text-secondary border-b-2 border-secondary font-semibold"
-                            : "text-on-surface-variant hover:text-on-surface"
-                        }`}
-                        onClick={() => setActiveTab("overview")}
-                      >
-                        التشريح والوظيفة
-                      </button>
-                      <button
-                        className={`detail-tab-btn py-2 px-space-xs font-title-sm text-title-sm transition-colors ${
-                          activeTab === "pathology"
-                            ? "text-secondary border-b-2 border-secondary font-semibold"
-                            : "text-on-surface-variant hover:text-on-surface"
-                        }`}
-                        onClick={() => setActiveTab("pathology")}
-                      >
-                        المضاعفات السريرية والتأثير النفسي
-                      </button>
-                      <button
-                        className={`detail-tab-btn py-2 px-space-xs font-title-sm text-title-sm transition-colors ${
-                          activeTab === "diagnostics"
-                            ? "text-secondary border-b-2 border-secondary font-semibold"
-                            : "text-on-surface-variant hover:text-on-surface"
-                        }`}
-                        onClick={() => setActiveTab("diagnostics")}
-                      >
-                        الفحوصات العصبية
-                      </button>
-                    </div>
-
-                    {/* محتوى البطاقة التفاعلي القابل للتمرير */}
-                    <div className="flex-1 p-space-md overflow-y-auto space-y-space-md text-right">
-                      {/* التبويب 1: النبذة التشريحية والارتباطات الوظيفية */}
-                      {activeTab === "overview" && (
-                        <div className="space-y-space-md">
-                          <div>
-                            <div className="flex items-center gap-space-xs mb-space-xs">
-                              <span className="material-symbols-outlined text-secondary text-[18px]">
-                                account_tree
-                              </span>
-                              <h2 className="font-title-md text-title-md text-on-surface">
-                                النبذة التشريحية والارتباطات الوظيفية
-                              </h2>
-                            </div>
-                            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                              {selectedRegion ? selectedRegion.function : currentLobe.overview}
-                            </p>
-                          </div>
-
-                          {/* محاور الوظائف الفرعية */}
-                          <div className="grid grid-cols-2 gap-space-sm">
-                            <div className="p-space-sm rounded-lg bg-surface-container-lowest">
-                              <span className="font-label-sm text-label-sm text-outline block">
-                                {currentLobe.fn1Label}
-                              </span>
-                              <span className="font-title-sm text-title-sm text-on-surface mt-1 block">
-                                {currentLobe.fn1Desc}
-                              </span>
-                            </div>
-                            <div className="p-space-sm rounded-lg bg-surface-container-lowest">
-                              <span className="font-label-sm text-label-sm text-outline block">
-                                {currentLobe.fn2Label}
-                              </span>
-                              <span className="font-title-sm text-title-sm text-on-surface mt-1 block">
-                                {currentLobe.fn2Desc}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* مؤشر سلامة المسارات العصبية */}
-                          <div className="p-space-sm rounded-lg bg-surface-container-high/60">
-                            <div className="flex items-center justify-between text-on-surface mb-1">
-                              <span className="font-title-sm text-title-sm">
-                                كثافة المسارات العصبية الحركية (Corticospinal)
-                              </span>
-                              <span className="font-mono text-secondary font-label-sm text-label-sm">
-                                {currentLobe.density}
-                              </span>
-                            </div>
-                            <div className="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className="bg-secondary h-full transition-all duration-700"
-                                style={{ width: currentLobe.barWidth }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* التبويب 2: المضاعفات السريرية والتأثير النفسي والسلوكي */}
-                      {activeTab === "pathology" && (
-                        <div className="space-y-space-sm">
-                          <div className="flex items-center gap-space-xs mb-space-xs">
-                            <span className="material-symbols-outlined text-tertiary text-[18px]">
-                              warning
-                            </span>
-                            <h2 className="font-title-md text-title-md text-on-surface">
-                              الاضطرابات والأعطال السريرية والتأثير النفسي
-                            </h2>
-                          </div>
-
-                          {/* إذا تم تحديد تلافيف معين، نعرض تأثيره النفسي المتخصص أولاً */}
-                          {selectedRegion && selectedRegion.psychological_impact && (
-                            <div className="p-space-sm rounded-lg bg-surface-container-lowest border border-secondary/40 mb-2">
-                              <div className="flex items-center gap-1 text-secondary font-title-sm text-title-sm mb-1">
-                                <span className="material-symbols-outlined text-[16px]">
-                                  psychology
-                                </span>
-                                <span>التأثير النفسي والسلوكي لـ {selectedRegion.name_ar}:</span>
-                              </div>
-                              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                                {selectedRegion.psychological_impact}
-                              </p>
-                            </div>
-                          )}
-
-                          <ul className="space-y-2">
-                            {currentLobe.pathologies.map((path, idx) => (
-                              <li
-                                key={idx}
-                                className="p-space-sm rounded-lg bg-surface-container-lowest flex items-start gap-space-sm"
-                              >
-                                <span className="material-symbols-outlined text-error text-[18px] mt-0.5">
-                                  {path.icon}
-                                </span>
-                                <div>
-                                  <strong className="font-title-sm text-title-sm text-on-surface block">
-                                    {path.title}
-                                  </strong>
-                                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                                    {path.desc}
-                                  </span>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* التبويب 3: الفحوصات والتقييمات العصبية */}
-                      {activeTab === "diagnostics" && (
-                        <div className="space-y-space-sm">
-                          <div className="flex items-center gap-space-xs mb-space-xs">
-                            <span className="material-symbols-outlined text-primary text-[18px]">
-                              upload_file
-                            </span>
-                            <h2 className="font-title-md text-title-md text-on-surface">
-                              بروتوكولات الفحص والتقييم السريري
-                            </h2>
-                          </div>
-                          <div className="space-y-2">
-                            {currentLobe.diagnostics.map((diag, idx) => (
-                              <div
-                                key={idx}
-                                className="p-space-sm rounded-lg bg-surface-container-lowest"
-                              >
-                                <div className="flex justify-between items-center text-on-surface mb-1">
-                                  <span className="font-title-sm text-title-sm">{diag.title}</span>
-                                  <span className="font-label-sm text-label-sm text-secondary font-mono">
-                                    {diag.tag}
-                                  </span>
-                                </div>
-                                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                                  {diag.desc}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* أسفل البطاقة: الإحداثيات الاستريوتاكتية وزر العزل */}
-                    <div className="p-space-sm bg-surface-container-lowest/90 flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant/30">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-outline" dir="ltr">
-                        <span className="text-secondary/80">TALAIRACH:</span>
-                        <span className="text-on-surface font-semibold">{currentLobe.coords}</span>
-                      </div>
-                      <button
-                        className={`px-space-sm py-1 rounded transition-colors text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap ${
-                          isIsolatingTracts
-                            ? "bg-secondary text-on-secondary shadow-sm ring-1 ring-secondary/50"
-                            : "bg-surface-container-high hover:bg-primary-container text-on-surface hover:text-on-primary-container"
-                        }`}
-                        onClick={handleToggleIsolate}
-                        title="عزل المسار العصبي للفص المختار وتعتيم باقي المسارات"
-                      >
-                        <span className="material-symbols-outlined text-[15px]">
-                          {isIsolatingTracts ? "flare" : "timeline"}
-                        </span>
-                        <span>{isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار العصبي"}</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setMobileDetailsOpen(true)}
+                      className="px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">info</span>
+                      <span>اللوحة السريرية</span>
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
 
               {/* ─── شريط الأدوات السفلي العائم والمراجع (Bottom Controls HUD) ─── */}
               <footer className="relative z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 sm:pt-space-sm pointer-events-auto">
@@ -922,6 +719,32 @@ export default function App() {
           </div>
         </footer>
       </div>
+
+      {/* ─── ورقة التفاصيل السريرية المنزلقة للجوال (Mobile Clinical Bottom Sheet Modal) ─── */}
+      {mobileDetailsOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-fade-in">
+          {/* خلفية معتمة تتيح النقر للإغلاق */}
+          <div
+            onClick={() => setMobileDetailsOpen(false)}
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+            aria-label="إغلاق اللوحة السريرية"
+          />
+
+          {/* محتوى الورقة المنزلقة */}
+          <div className="relative z-10 w-full animate-slide-up">
+            <ClinicalDetailsPanel
+              currentLobe={currentLobe}
+              selectedRegion={selectedRegion}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              isIsolatingTracts={isIsolatingTracts}
+              onToggleIsolate={handleToggleIsolate}
+              onClose={() => setMobileDetailsOpen(false)}
+              isMobileSheet={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
