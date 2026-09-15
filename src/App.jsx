@@ -38,6 +38,10 @@ export default function App() {
   const [isIsolatingTracts, setIsIsolatingTracts] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Mobile responsive states
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+
   // Toggle states
   const [showTracts, setShowTracts] = useState(true);
   const [showPlanes, setShowPlanes] = useState(false);
@@ -80,9 +84,21 @@ export default function App() {
 
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen">
-      {/* ─── الشريط الجانبي الأيمن الثابت (Fixed Right Sidebar) ─── */}
-      <aside className="fixed right-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col pt-space-md pb-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-l border-outline-variant/20">
-        {/* الشعار وإصدار النظام */}
+      {/* ─── خلفية معتمة للجوال عند فتح القائمة الجانبية ─── */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden transition-opacity"
+        />
+      )}
+
+      {/* ─── الشريط الجانبي الأيمن المتجاوب (Responsive Right Sidebar) ─── */}
+      <aside
+        className={`fixed right-0 top-0 h-full w-72 max-w-[85vw] bg-surface-container-low z-50 flex flex-col pt-space-md pb-space-lg shadow-2xl lg:shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-l border-outline-variant/20 transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+        }`}
+      >
+        {/* الشعار وإصدار النظام وزر الإغلاق في الجوال */}
         <div className="px-space-md mb-space-lg flex items-center justify-between">
           <div className="flex items-center gap-space-sm">
             <div className="w-2.5 h-2.5 rounded-full bg-secondary transition-opacity duration-1000 animate-pulse"></div>
@@ -95,9 +111,18 @@ export default function App() {
               </span>
             </div>
           </div>
-          <span className="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-container text-secondary font-mono">
-            v4.2
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-container text-secondary font-mono">
+              v4.2
+            </span>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container"
+              title="إغلاق القائمة"
+            >
+              <span className="material-symbols-outlined text-xl">close</span>
+            </button>
+          </div>
         </div>
 
         {/* حقل البحث السريري */}
@@ -132,6 +157,7 @@ export default function App() {
                     handleSelectRegionFrom3D(reg);
                     setActiveNavSection("explorer");
                     setSearchQuery("");
+                    setMobileMenuOpen(false);
                   }}
                 >
                   <span className="font-semibold">{reg.name_ar}</span>
@@ -148,13 +174,16 @@ export default function App() {
             الأقسام السريرية الأكاديمية
           </span>
         </div>
-        <nav className="flex-1 px-space-sm space-y-1">
+        <nav className="flex-1 px-space-sm space-y-1 overflow-y-auto">
           {NAV_ITEMS_ACADEMIC.map((item) => {
             const isActive = activeNavSection === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNavSection(item.id)}
+                onClick={() => {
+                  setActiveNavSection(item.id);
+                  setMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-space-sm px-space-md py-space-sm transition-all text-right ${
                   isActive
                     ? "bg-primary-container text-on-primary-container font-title-sm font-semibold rounded-lg shadow-sm"
@@ -180,7 +209,10 @@ export default function App() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNavSection(item.id)}
+                onClick={() => {
+                  setActiveNavSection(item.id);
+                  setMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-space-sm px-space-md py-space-sm transition-all text-right ${
                   isActive
                     ? "bg-primary-container text-on-primary-container font-title-sm font-semibold rounded-lg shadow-sm"
@@ -209,24 +241,35 @@ export default function App() {
       </aside>
 
       {/* ─── الحيز الرئيسي الأيسر (Left/Center Content) ─── */}
-      <div className="pr-72">
+      <div className="lg:pr-72 pr-0 w-full min-w-0 transition-all">
         {/* البار العلوي الأفقي (Top Horizontal Header) */}
-        <header className="fixed top-0 right-72 left-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-gutter-desktop border-b border-outline-variant/20">
-          <div className="flex items-center gap-space-md">
+        <header className="fixed top-0 lg:right-72 right-0 left-0 h-14 sm:h-16 bg-surface/85 backdrop-blur-xl shadow-sm z-40 flex items-center justify-between px-3 sm:px-6 border-b border-outline-variant/20">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* زر فتح القائمة الجانبية للجوال */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-1.5 rounded-lg text-on-surface hover:bg-surface-container flex items-center justify-center border border-outline-variant/25 transition-colors"
+              aria-label="القائمة الرئيسية"
+              title="القائمة الرئيسية"
+            >
+              <span className="material-symbols-outlined text-[22px]">menu</span>
+            </button>
+
             {activeNavSection !== "explorer" ? (
               <button
                 onClick={() => setActiveNavSection("explorer")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold hover:shadow-md transition-all"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold hover:shadow-md transition-all whitespace-nowrap"
               >
                 <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
-                <span>العودة للمستكشف ثلاثي الأبعاد</span>
+                <span className="hidden xs:inline">العودة للمستكشف 3D</span>
+                <span className="xs:hidden">3D</span>
               </button>
             ) : (
-              <div className="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-space-sm py-1.5 rounded">
+              <div className="hidden sm:flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-space-sm py-1.5 rounded">
                 <span className="material-symbols-outlined text-[16px] text-secondary">
                   location_searching
                 </span>
-                <span className="font-mono">MNI152: [X: +14.2, Y: -28.6, Z: +42.1]</span>
+                <span className="font-mono">MNI152: [X:+14, Y:-28, Z:+42]</span>
               </div>
             )}
             <div className="hidden xl:flex items-center gap-space-xs text-outline font-label-sm text-label-sm">
@@ -251,42 +294,44 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-space-sm">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setActiveNavSection("diagnostic_mode")}
-              className={`h-9 px-space-sm rounded flex items-center gap-space-xs font-label-sm text-label-sm transition-colors ${
+              className={`h-8 sm:h-9 px-2 sm:px-3 rounded flex items-center gap-1 sm:gap-1.5 text-xs transition-colors ${
                 activeNavSection === "diagnostic_mode"
                   ? "bg-primary-container text-on-primary-container font-semibold"
                   : "bg-surface-container hover:bg-surface-container-high text-on-surface"
               }`}
+              title="نمط الفحص السريري"
             >
               <span className="material-symbols-outlined text-[18px]">tune</span>
-              <span>المعايرة المقطعية</span>
+              <span className="hidden md:inline font-label-sm">المعايرة المقطعية</span>
             </button>
             <button
               onClick={() => setActiveNavSection("anatomy")}
-              className={`h-9 px-space-sm rounded flex items-center gap-space-xs font-label-sm text-label-sm transition-colors ${
+              className={`h-8 sm:h-9 px-2 sm:px-3 rounded flex items-center gap-1 sm:gap-1.5 text-xs transition-colors ${
                 activeNavSection === "anatomy"
                   ? "bg-primary-container text-on-primary-container font-semibold"
                   : "bg-surface-container hover:bg-surface-container-high text-on-surface"
               }`}
+              title="التشريح السريري"
             >
               <span className="material-symbols-outlined text-[18px]">layers</span>
-              <span>الطبقات النسيجية</span>
+              <span className="hidden md:inline font-label-sm">الطبقات النسيجية</span>
             </button>
-            <div className="h-6 w-[1px] bg-surface-container-highest mx-space-xs"></div>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
+            <div className="h-5 sm:h-6 w-[1px] bg-surface-container-highest mx-0.5 sm:mx-1"></div>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-on-primary text-[16px] sm:text-[18px]">person</span>
             </div>
           </div>
         </header>
 
         {/* مساحة العمل (Main Spatial Deck / Clinical Views) */}
-        <main className="relative pt-16 bg-surface min-h-screen w-full px-gutter-desktop py-space-lg">
-          <div className="flex flex-col w-full relative -mt-space-lg">
+        <main className="relative pt-14 sm:pt-16 bg-surface min-h-screen w-full px-2 sm:px-4 lg:px-gutter-desktop py-space-sm sm:py-space-lg">
+          <div className="flex flex-col w-full relative -mt-space-sm sm:-mt-space-lg">
             {activeNavSection === "explorer" ? (
               /* إطار فضاء العمل ثلاثي الأبعاد (100vh spatial viewport shell) */
-              <div className="relative w-full h-[calc(100vh-5rem)] overflow-hidden rounded-xl bg-surface-container-lowest flex flex-col justify-between p-gutter-desktop shadow-2xl border border-outline-variant/30">
+              <div className="relative w-full h-[calc(100vh-4.5rem)] min-h-[560px] overflow-hidden rounded-xl bg-surface-container-lowest flex flex-col justify-between p-2 sm:p-4 lg:p-gutter-desktop shadow-2xl border border-outline-variant/30">
               {/* شبكة الإحداثيات الاستريوتاكتية الدقيقة (Stereotaxic Grid Overlay) */}
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -389,15 +434,15 @@ export default function App() {
               </div>
 
               {/* ─── الشريط العلوي العائم (Top HUD Bar) ─── */}
-              <header className="relative z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+              <header className="relative z-20 flex flex-wrap items-center justify-between gap-1.5 pointer-events-auto w-full">
                 {/* شريط اختيار الفصوص السريع (Lobe Quick-Selection Strip) */}
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md border border-outline-variant/20 overflow-x-auto">
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
                   {Object.entries(neuroDatabase).map(([key, data]) => {
                     const isActive = selectedLobeKey === key;
                     return (
                       <button
                         key={key}
-                        className={`lobe-btn px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                        className={`lobe-btn px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1 text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                           isActive
                             ? "bg-primary-container text-on-primary-container shadow-sm"
                             : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
@@ -405,11 +450,11 @@ export default function App() {
                         onClick={() => handleSelectLobe(key)}
                       >
                         <span
-                          className="w-2 h-2 rounded-full"
+                          className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: data.highlightColor }}
                         ></span>
                         <span>{data.title}</span>
-                        <span className="opacity-60 font-mono text-[11px]">
+                        <span className="hidden sm:inline opacity-60 font-mono text-[11px]">
                           {key.charAt(0).toUpperCase() + key.slice(1)}
                         </span>
                       </button>
@@ -433,28 +478,42 @@ export default function App() {
               </header>
 
               {/* ─── مساحة التفاعل الرئيسية: بطاقة الفحص السريري + تلميح الفأرة ─── */}
-              <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-space-md items-center my-2 pointer-events-none min-h-0">
-                {/* دليل التدوير بالماوس (Bottom-Right Cue) */}
-                <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end h-full pointer-events-none pb-1">
-                  <div className="inline-flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20">
-                    <span className="material-symbols-outlined text-secondary text-[18px]">
-                      gesture
+              <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-space-md items-end lg:items-center my-1 sm:my-2 pointer-events-none min-h-0">
+                {/* دليل التدوير باللمس أو الماوس (Bottom-Right Cue) */}
+                <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end pointer-events-none pb-1 order-2 lg:order-1">
+                  <div className="inline-flex items-center gap-1 sm:gap-space-xs px-2.5 sm:px-space-md py-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20 text-[11px] sm:text-xs">
+                    <span className="material-symbols-outlined text-secondary text-[16px] sm:text-[18px]">
+                      touch_app
                     </span>
-                    <span className="font-title-sm text-title-sm text-on-surface font-semibold">
-                      اسحب بالماوس للتدوير الحر بزاوية 360°
+                    <span className="font-semibold text-on-surface">
+                      اسحب باللمس أو الماوس للتدوير 360°
                     </span>
-                    <span className="text-outline text-body-sm mx-1">|</span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">
-                      انقر المباشر على التراكيب للتشخيص الفوري
+                    <span className="hidden sm:inline text-outline mx-1">|</span>
+                    <span className="hidden sm:inline text-on-surface-variant">
+                      انقر على التراكيب للتشخيص الفوري
                     </span>
                   </div>
                 </div>
 
                 {/* بطاقة الفحص السريري العلمية الزجاجية على اليسار (Left Scientific Card) */}
-                <div className="lg:col-span-5 xl:col-span-4 w-full h-[580px] max-h-[68vh] flex flex-col pointer-events-auto">
-                  <div className="relative w-full h-full flex flex-col rounded-xl bg-surface-container/90 backdrop-blur-xl shadow-2xl overflow-hidden border border-outline-variant/30">
-                    {/* ترويسة البطاقة */}
-                    <div className="p-space-md bg-surface-container-high/90 flex flex-col gap-space-xs border-b border-outline-variant/30">
+                <div className="lg:col-span-5 xl:col-span-4 w-full flex flex-col pointer-events-auto order-1 lg:order-2">
+                  {/* زر تبديل إظهار/إخفاء تفاصيل الفص في الجوال */}
+                  <div className="lg:hidden flex justify-end mb-1">
+                    <button
+                      onClick={() => setMobileDetailsOpen(!mobileDetailsOpen)}
+                      className="px-2.5 py-1 rounded-lg bg-surface-container-high/95 backdrop-blur-md border border-outline-variant/30 text-[11px] font-semibold flex items-center gap-1 text-on-surface shadow-md pointer-events-auto"
+                    >
+                      <span className="material-symbols-outlined text-secondary text-[15px]">
+                        {mobileDetailsOpen ? "expand_more" : "clinical_notes"}
+                      </span>
+                      <span>{mobileDetailsOpen ? "تصغير اللوحة السريرية" : `بيانات ${currentLobe.title}`}</span>
+                    </button>
+                  </div>
+
+                  <div className={`transition-all duration-300 ${!mobileDetailsOpen ? "hidden lg:flex" : "flex"} flex-col w-full h-[380px] sm:h-[480px] lg:h-[580px] max-h-[50vh] lg:max-h-[68vh]`}>
+                    <div className="relative w-full h-full flex flex-col rounded-xl bg-surface-container/90 backdrop-blur-xl shadow-2xl overflow-hidden border border-outline-variant/30">
+                      {/* ترويسة البطاقة */}
+                      <div className="p-space-sm sm:p-space-md bg-surface-container-high/90 flex flex-col gap-space-xs border-b border-outline-variant/30">
                       <div className="flex items-center justify-between">
                         <span className="px-2 py-0.5 rounded font-label-sm text-label-sm bg-secondary-container text-on-secondary-container tracking-wider">
                           {selectedRegion
@@ -697,73 +756,73 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            </div>
 
               {/* ─── شريط الأدوات السفلي العائم والمراجع (Bottom Controls HUD) ─── */}
-              <footer className="relative z-20 flex flex-col md:flex-row items-center justify-between gap-space-md pt-space-sm pointer-events-auto">
+              <footer className="relative z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 sm:pt-space-sm pointer-events-auto">
                 {/* أزرار التحكم في طبقات المنظور */}
-                <div className="flex items-center gap-space-xs bg-surface-container-low/85 backdrop-blur-md p-1 rounded-lg shadow-md border border-outline-variant/20">
+                <div className="flex items-center gap-1 bg-surface-container-low/85 backdrop-blur-md p-1 rounded-lg shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
                   <button
-                    className={`px-space-sm py-1.5 rounded-lg font-title-sm text-title-sm flex items-center gap-space-xs transition-colors ${
+                    className={`px-2 sm:px-space-sm py-1 sm:py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors shrink-0 whitespace-nowrap ${
                       showTracts
-                        ? "text-on-surface bg-surface-container-high"
+                        ? "text-on-surface bg-surface-container-high font-semibold"
                         : "text-on-surface-variant hover:bg-surface-container-high"
                     }`}
                     onClick={() => setShowTracts(!showTracts)}
                   >
-                    <span className="material-symbols-outlined text-secondary text-[16px]">
+                    <span className="material-symbols-outlined text-secondary text-[15px]">
                       polyline
                     </span>
-                    <span>المسارات العصبية (DTI)</span>
+                    <span>المسارات (DTI)</span>
                   </button>
 
                   <button
-                    className={`px-space-sm py-1.5 rounded-lg font-title-sm text-title-sm flex items-center gap-space-xs transition-colors ${
+                    className={`px-2 sm:px-space-sm py-1 sm:py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors shrink-0 whitespace-nowrap ${
                       showPlanes
-                        ? "text-on-surface bg-surface-container-high"
+                        ? "text-on-surface bg-surface-container-high font-semibold"
                         : "text-on-surface-variant hover:bg-surface-container-high"
                     }`}
                     onClick={() => setShowPlanes(!showPlanes)}
                   >
-                    <span className="material-symbols-outlined text-[16px]">grid_4x4</span>
-                    <span>المحاور (Sagittal / Axial)</span>
+                    <span className="material-symbols-outlined text-[15px]">grid_4x4</span>
+                    <span>المحاور</span>
                   </button>
 
                   <button
-                    className={`px-space-sm py-1.5 rounded-lg font-title-sm text-title-sm flex items-center gap-space-xs transition-colors ${
+                    className={`px-2 sm:px-space-sm py-1 sm:py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors shrink-0 whitespace-nowrap ${
                       isTranslucent
-                        ? "text-on-surface bg-surface-container-high"
+                        ? "text-on-surface bg-surface-container-high font-semibold"
                         : "text-on-surface-variant hover:bg-surface-container-high"
                     }`}
                     onClick={() => setIsTranslucent(!isTranslucent)}
                   >
-                    <span className="material-symbols-outlined text-[16px]">opacity</span>
-                    <span>شفافية القشرة (%60)</span>
+                    <span className="material-symbols-outlined text-[15px]">opacity</span>
+                    <span>الشفافية</span>
                   </button>
 
-                  <div className="h-4 w-px bg-surface-container-highest mx-1"></div>
+                  <div className="h-4 w-px bg-surface-container-highest mx-0.5 shrink-0"></div>
 
                   <button
-                    className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+                    className="p-1 sm:p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors shrink-0"
                     onClick={resetCamera}
                     title="إعادة ضبط زاوية الرؤية"
                   >
-                    <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <span className="material-symbols-outlined text-[17px]">restart_alt</span>
                   </button>
                 </div>
 
                 {/* اعتمادية المعايير السريرية */}
-                <div className="flex flex-col items-start gap-1 text-on-surface-variant/70 font-body-sm text-body-sm bg-surface-container-lowest/60 px-space-md py-1.5 rounded-lg border border-outline-variant/10">
-                  <div className="flex items-center gap-space-xs">
-                    <span className="material-symbols-outlined text-secondary text-[16px]">
+                <div className="flex flex-col items-start gap-0.5 text-on-surface-variant/70 font-body-sm bg-surface-container-lowest/70 px-2.5 py-1 rounded-lg border border-outline-variant/10 text-[10px] sm:text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-secondary text-[14px]">
                       verified
                     </span>
-                    <span>
+                    <span className="line-clamp-1 sm:line-clamp-none">
                       البيانات مستندة إلى المراجع الأكاديمية لطب الأعصاب والتشريح العصبي السريري
-                      (Clinical Neuroanatomy Reference Standard)
                     </span>
                   </div>
-                  <div className="text-[11px] text-secondary font-medium flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">psychology</span>
+                  <div className="text-[10px] sm:text-[11px] text-secondary font-medium flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">psychology</span>
                     <span>شارك ببناء الموقع المختص عمر فهد الشمري</span>
                   </div>
                 </div>
@@ -771,7 +830,7 @@ export default function App() {
             </div>
             ) : (
               /* إطار عارض الأقسام السريرية والأدوات التحليلية */
-              <div className="relative w-full min-h-[calc(100vh-5rem)] overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl border border-outline-variant/30 flex flex-col">
+              <div className="relative w-full min-h-[calc(100vh-4.5rem)] overflow-x-hidden rounded-xl bg-surface-container-lowest shadow-2xl border border-outline-variant/30 flex flex-col">
                 {activeNavSection === "anatomy" && (
                   <ClinicalAnatomyView
                     onSelectLobeAndSwitchTo3D={(lobe) => {
@@ -817,8 +876,8 @@ export default function App() {
         </main>
 
         {/* ─── الفوتر الأكاديمي السريري (Academic Clinical Footer) ─── */}
-        <footer className="w-full bg-surface-container-lowest py-space-xl px-gutter-desktop mt-space-xl border-t border-outline-variant/20">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-space-lg text-right font-body-sm text-body-sm">
+        <footer className="w-full bg-surface-container-lowest py-space-md sm:py-space-xl px-4 sm:px-6 lg:px-gutter-desktop mt-space-md sm:mt-space-xl border-t border-outline-variant/20">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-space-lg text-right font-body-sm text-body-sm">
             <div className="space-y-space-xs">
               <div className="font-headline-sm text-headline-sm text-on-surface">
                 أطلس الدماغ التفاعلي | NeuroAtlas
