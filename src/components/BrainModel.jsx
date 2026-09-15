@@ -33,6 +33,16 @@ function getRegionData(obj) {
 
 const BRAIN_MODEL_URL = `${import.meta.env.BASE_URL}brain.glb`;
 
+const NATURAL_CORTEX_COLOR = "#d5c7b8";
+const NATURAL_CEREBELLUM_COLOR = "#c7b8a7";
+const NATURAL_STEM_COLOR = "#ddd4c8";
+
+function getNaturalColor(lobeKey) {
+  if (lobeKey === "cerebellum") return NATURAL_CEREBELLUM_COLOR;
+  if (lobeKey === "brainstem" || lobeKey === "subcortical") return NATURAL_STEM_COLOR;
+  return NATURAL_CORTEX_COLOR;
+}
+
 export default function BrainModel({
   onSelectRegion,
   onHoverRegion,
@@ -45,7 +55,7 @@ export default function BrainModel({
   const meshMaterials = useRef(new Map());
   const meshColors = useRef(new Map());
 
-  // تهيئة المواد لجميع الأجزاء بالألوان السريرية الرصينة
+  // تهيئة المواد لجميع الأجزاء بحالة النسيج العصبي الطبيعي السليم
   useEffect(() => {
     meshMaterials.current.clear();
     meshColors.current.clear();
@@ -59,17 +69,19 @@ export default function BrainModel({
 
       const baseColor = lobeData.color;
       const highlightColor = lobeData.highlightColor;
+      const naturalColor = getNaturalColor(lobeKey);
 
       meshColors.current.set(child.uuid, {
         baseColor,
         highlightColor,
+        naturalColor,
         lobeKey,
       });
 
       const mat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(baseColor),
-        roughness: 0.65,
-        metalness: 0.08,
+        color: new THREE.Color(naturalColor),
+        roughness: 0.52,
+        metalness: 0.04,
         bumpScale: 0.04,
         transparent: cortexOpacity < 0.99,
         opacity: cortexOpacity,
@@ -82,8 +94,10 @@ export default function BrainModel({
     });
   }, [scene, cortexOpacity]);
 
-  // تحديث حالات التحديد والتحويم
+  // تحديث حالات التحديد والتحويم والحالة الطبيعية
   useEffect(() => {
+    const isLobeSelected = Boolean(selectedLobeKey && selectedLobeKey !== "whole");
+
     scene.traverse((child) => {
       if (!child.isMesh) return;
       const mat = meshMaterials.current.get(child.uuid);
@@ -91,7 +105,7 @@ export default function BrainModel({
       if (!mat || !colorData) return;
 
       const region = getRegionData(child);
-      const isLobeActive = colorData.lobeKey === selectedLobeKey;
+      const isLobeActive = isLobeSelected && colorData.lobeKey === selectedLobeKey;
       const isRegionActive = selectedRegion && region?.id === selectedRegion.id;
       const isHovered = hoveredRegion && region?.id === hoveredRegion.id;
 
@@ -112,17 +126,24 @@ export default function BrainModel({
         mat.emissiveIntensity = 0.6;
         mat.roughness = 0.45;
       } else if (isLobeActive) {
-        // الفص النشط حالياً
+        // الفص النشط حالياً عند الاختيار السريري
         mat.color.set(colorData.highlightColor);
         mat.emissive.set("#172554");
         mat.emissiveIntensity = 0.35;
         mat.roughness = 0.55;
-      } else {
-        // الحالة الافتراضية
+      } else if (isLobeSelected) {
+        // فصوص أخرى عند تحديد فص معين (تعتيم خفيف لتسليط الضوء على الفص المختار)
         mat.color.set(colorData.baseColor);
         mat.emissive.set("#000000");
         mat.emissiveIntensity = 0;
         mat.roughness = 0.65;
+      } else {
+        // ─── الحالة الطبيعية المبدئية للمجسم (Natural Baseline Anatomical State) ───
+        // الدماغ كامل بحالته الطبيعية السليمة دون تلوين تشخيصي مسبق
+        mat.color.set(colorData.naturalColor);
+        mat.emissive.set("#000000");
+        mat.emissiveIntensity = 0;
+        mat.roughness = 0.52;
       }
     });
   }, [selectedLobeKey, selectedRegion, hoveredRegion, cortexOpacity, scene]);

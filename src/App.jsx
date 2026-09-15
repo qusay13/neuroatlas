@@ -1,9 +1,9 @@
-import { useState, useRef, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Center } from "@react-three/drei";
 import BrainModel from "./components/BrainModel";
 import NeuralTracts from "./components/NeuralTracts";
-import { neuroDatabase } from "./data/neuroDatabase";
+import { neuroDatabase, wholeBrainData } from "./data/neuroDatabase";
 import regions from "./data/regions";
 
 // استيراد الأقسام السريرية والأدوات التحليلية الجديدة
@@ -32,7 +32,7 @@ const NAV_ITEMS_TOOLS = [
 
 export default function App() {
   const [activeNavSection, setActiveNavSection] = useState("explorer");
-  const [selectedLobeKey, setSelectedLobeKey] = useState("frontal");
+  const [selectedLobeKey, setSelectedLobeKey] = useState(null); // null = الحالة الطبيعية المبدئية لكامل الدماغ
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [hoveredRegion, setHoveredRegion] = useState(null);
   const [activeTab, setActiveTab] = useState("overview"); // 'overview' | 'pathology' | 'diagnostics'
@@ -42,15 +42,26 @@ export default function App() {
   // Mobile responsive states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false
+  );
 
-  // Toggle states
-  const [showTracts, setShowTracts] = useState(true);
+  useEffect(() => {
+    const checkResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", checkResize);
+    return () => window.removeEventListener("resize", checkResize);
+  }, []);
+
+  // الحالة المبدئية للمجسم: مصمت بحالته الطبيعية والمسارات مغلقة حتى يطلبها المستخدم
+  const [showTracts, setShowTracts] = useState(false);
   const [showPlanes, setShowPlanes] = useState(false);
   const [isTranslucent, setIsTranslucent] = useState(false);
 
   const controlsRef = useRef();
 
-  const currentLobe = neuroDatabase[selectedLobeKey] || neuroDatabase.frontal;
+  const currentLobe = selectedLobeKey
+    ? neuroDatabase[selectedLobeKey] || wholeBrainData
+    : wholeBrainData;
 
   const handleSelectLobe = (lobeKey) => {
     setSelectedLobeKey(lobeKey);
@@ -68,6 +79,11 @@ export default function App() {
     if (controlsRef.current) {
       controlsRef.current.reset();
     }
+    setSelectedLobeKey(null);
+    setSelectedRegion(null);
+    setShowTracts(false);
+    setIsTranslucent(false);
+    setIsIsolatingTracts(false);
   };
 
   const handleToggleIsolate = () => {
@@ -397,7 +413,10 @@ export default function App() {
 
                   <Suspense fallback={null}>
                     {/* مجسم الدماغ التشريحي المرجعي */}
-                    <Center scale={0.00032} position={[0.75, -0.1, 0]}>
+                    <Center
+                      scale={isMobile ? 0.00030 : 0.00032}
+                      position={isMobile ? [0, 0, 0] : [0.65, -0.1, 0]}
+                    >
                       <BrainModel
                         selectedLobeKey={selectedLobeKey}
                         selectedRegion={selectedRegion}
@@ -435,53 +454,123 @@ export default function App() {
               </div>
 
               {/* ─── الشريط العلوي العائم (Top HUD Bar) ─── */}
-              <header className="relative z-20 flex flex-wrap items-center justify-between gap-1.5 pointer-events-auto w-full">
-                {/* شريط اختيار الفصوص السريع (Lobe Quick-Selection Strip) */}
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
-                  {Object.entries(neuroDatabase).map(([key, data]) => {
-                    const isActive = selectedLobeKey === key;
-                    return (
-                      <button
-                        key={key}
-                        className={`lobe-btn px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1 text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
-                          isActive
-                            ? "bg-primary-container text-on-primary-container shadow-sm"
-                            : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-                        }`}
-                        onClick={() => handleSelectLobe(key)}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: data.highlightColor }}
-                        ></span>
-                        <span>{data.title}</span>
-                        <span className="hidden sm:inline opacity-60 font-mono text-[11px]">
-                          {key.charAt(0).toUpperCase() + key.slice(1)}
-                        </span>
-                      </button>
-                    );
-                  })}
+              <header className="relative z-20 flex flex-col gap-1.5 pointer-events-auto w-full">
+                <div className="flex items-center justify-between gap-1.5 w-full">
+                  {/* شريط اختيار الفصوص السريع (Lobe Quick-Selection Strip) */}
+                  <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
+                    {/* خيار كامل الدماغ بالحالة الطبيعية السليمة */}
+                    <button
+                      className={`lobe-btn px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                        !selectedLobeKey
+                          ? "bg-primary-container text-on-primary-container shadow-sm ring-1 ring-primary/40"
+                          : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
+                      }`}
+                      onClick={() => handleSelectLobe(null)}
+                    >
+                      <span className="text-[13px]">🧠</span>
+                      <span>كامل الدماغ (طبيعي)</span>
+                    </button>
+
+                    {Object.entries(neuroDatabase).map(([key, data]) => {
+                      const isActive = selectedLobeKey === key;
+                      return (
+                        <button
+                          key={key}
+                          className={`lobe-btn px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1 text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                            isActive
+                              ? "bg-primary-container text-on-primary-container shadow-sm"
+                              : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
+                          }`}
+                          onClick={() => handleSelectLobe(key)}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: data.highlightColor }}
+                          ></span>
+                          <span>{data.title}</span>
+                          <span className="hidden sm:inline opacity-60 font-mono text-[11px]">
+                            {key.charAt(0).toUpperCase() + key.slice(1)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* معلومات المعايرة السريرية (Calibration Meta Bar) */}
+                  <div className="hidden 2xl:flex items-center gap-space-md p-1.5 px-space-md rounded-lg bg-surface-container-low/75 backdrop-blur-md shadow-sm border border-outline-variant/20 shrink-0">
+                    <div className="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm">
+                      <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
+                      <span>العرض: 3D Reconstructed Mesh (MNI Standard)</span>
+                    </div>
+                    <div className="h-3 w-0.5 bg-surface-container-highest"></div>
+                    <div className="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm font-mono">
+                      <span>FOV: 220mm</span>
+                      <span className="opacity-40">|</span>
+                      <span>ISO: 0.5T Submillimeter</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* معلومات المعايرة السريرية (Calibration Meta Bar) */}
-                <div className="hidden 2xl:flex items-center gap-space-md p-1.5 px-space-md rounded-lg bg-surface-container-low/75 backdrop-blur-md shadow-sm border border-outline-variant/20">
-                  <div className="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm">
-                    <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
-                    <span>العرض: 3D Reconstructed Mesh (MNI Standard)</span>
+                {/* ─── اللوحة السريرية المرفوعة للأعلى بالجوال (Raised Mobile Clinical Bar) ─── */}
+                <div className="lg:hidden w-full bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-2 px-3 shadow-lg flex items-center justify-between gap-2 pointer-events-auto">
+                  <div
+                    className="flex items-center gap-2 min-w-0 cursor-pointer"
+                    onClick={() => setMobileDetailsOpen(true)}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: selectedLobeKey ? currentLobe.highlightColor : "#d6cbbe" }}
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-on-surface truncate">
+                        {selectedRegion
+                          ? selectedRegion.name_ar
+                          : selectedLobeKey
+                          ? currentLobe.title
+                          : "كامل الدماغ البشري (الحالة الطبيعية)"}
+                      </div>
+                      <div className="text-[10px] text-outline font-mono truncate">
+                        {selectedRegion
+                          ? selectedRegion.name_en
+                          : selectedLobeKey
+                          ? `${currentLobe.latin} • ${currentLobe.volume}`
+                          : "Anatomical Baseline · 100% Volume"}
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-3 w-0.5 bg-surface-container-highest"></div>
-                  <div className="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm font-mono">
-                    <span>FOV: 220mm</span>
-                    <span className="opacity-40">|</span>
-                    <span>ISO: 0.5T Submillimeter</span>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {selectedLobeKey && (
+                      <button
+                        onClick={handleToggleIsolate}
+                        className={`p-1.5 rounded-lg text-xs transition-colors flex items-center justify-center ${
+                          isIsolatingTracts
+                            ? "bg-secondary text-on-secondary shadow-sm"
+                            : "bg-surface-container-high text-on-surface"
+                        }`}
+                        title={isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار"}
+                      >
+                        <span className="material-symbols-outlined text-[17px]">
+                          {isIsolatingTracts ? "flare" : "timeline"}
+                        </span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setMobileDetailsOpen(true)}
+                      className="px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">info</span>
+                      <span>اللوحة السريرية</span>
+                    </button>
                   </div>
                 </div>
               </header>
 
-              {/* ─── مساحة التفاعل الرئيسية: بطاقة الفحص السريري + تلميح الفأرة ─── */}
+              {/* ─── مساحة التفاعل الرئيسية: بطاقة الفحص السريري لسطح المكتب + تلميح الفأرة ─── */}
               <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-space-md items-end lg:items-center my-1 sm:my-2 pointer-events-none min-h-0">
                 {/* دليل التدوير باللمس أو الماوس (Bottom-Right Cue) */}
-                <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end pointer-events-none pb-1 order-2 lg:order-1">
+                <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end pointer-events-none pb-1">
                   <div className="inline-flex items-center gap-1 sm:gap-space-xs px-2.5 sm:px-space-md py-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20 text-[11px] sm:text-xs">
                     <span className="material-symbols-outlined text-secondary text-[16px] sm:text-[18px]">
                       touch_app
@@ -496,8 +585,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* بطاقة الفحص السريري لسطح المكتب (Desktop Only Floating Card) */}
-                <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 w-full flex-col pointer-events-auto order-1 lg:order-2">
+                {/* بطاقة الفحص السريري لسطح المكتب فقط (Desktop Only Floating Card) */}
+                <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 w-full flex-col pointer-events-auto">
                   <ClinicalDetailsPanel
                     currentLobe={currentLobe}
                     selectedRegion={selectedRegion}
@@ -507,51 +596,6 @@ export default function App() {
                     onToggleIsolate={handleToggleIsolate}
                     isMobileSheet={false}
                   />
-                </div>
-
-                {/* شريط معلومات الفص السريع في الجوال (Mobile Floating Summary Bar) */}
-                <div className="lg:hidden pointer-events-auto w-full bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-2.5 shadow-xl flex items-center justify-between gap-2 order-1">
-                  <div
-                    className="flex items-center gap-2 min-w-0 cursor-pointer"
-                    onClick={() => setMobileDetailsOpen(true)}
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
-                      style={{ backgroundColor: currentLobe.highlightColor }}
-                    />
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-on-surface truncate">
-                        {selectedRegion ? selectedRegion.name_ar : currentLobe.title}
-                      </div>
-                      <div className="text-[10px] text-outline font-mono truncate">
-                        {selectedRegion ? selectedRegion.name_en : currentLobe.latin} • {currentLobe.volume}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={handleToggleIsolate}
-                      className={`p-1.5 rounded-lg text-xs transition-colors flex items-center justify-center ${
-                        isIsolatingTracts
-                          ? "bg-secondary text-on-secondary shadow-sm"
-                          : "bg-surface-container-high text-on-surface"
-                      }`}
-                      title={isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار"}
-                    >
-                      <span className="material-symbols-outlined text-[17px]">
-                        {isIsolatingTracts ? "flare" : "timeline"}
-                      </span>
-                    </button>
-
-                    <button
-                      onClick={() => setMobileDetailsOpen(true)}
-                      className="px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">info</span>
-                      <span>اللوحة السريرية</span>
-                    </button>
-                  </div>
                 </div>
               </div>
 

@@ -15,7 +15,7 @@ export default function ClinicalDetailsPanel({
     <div
       className={`relative w-full flex flex-col bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 overflow-hidden shadow-2xl ${
         isMobileSheet
-          ? "rounded-t-2xl max-h-[82vh] h-[82vh]"
+          ? "rounded-t-2xl max-h-[88vh] h-[88vh]"
           : "rounded-xl h-[580px] max-h-[68vh]"
       }`}
     >
