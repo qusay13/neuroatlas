@@ -1,0 +1,23 @@
+.neural-guide{background:rgba(17,28,46,.97);color:#e2e8f0;border:1px solid #415167;border-radius:14px;padding:15px;max-height:70vh;overflow:auto;box-shadow:0 18px 55px #0005;font-size:12px;line-height:1.7;scrollbar-width:thin}
+.neural-guide button{cursor:pointer;font:inherit;color:inherit}
+.neural-guide-heading{display:flex;align-items:center;justify-content:space-between;font-size:15px;margin-bottom:10px}
+.neural-guide-heading button{font-size:23px;line-height:1;width:30px;height:30px;border-radius:7px;background:#253348}
+.neural-guide-tabs{display:flex;gap:5px;margin-bottom:10px}
+.neural-guide-tabs button{flex:1;padding:6px;border-radius:7px;background:#1b2b40;border:1px solid transparent}
+.neural-guide button[aria-pressed=true]{background:#304e61;border-color:#82b2cb;color:#fff}
+.neural-view-button{width:100%;border:1px solid #586750;border-radius:7px;padding:5px;color:#f5d798!important;background:#30362b}
+.neural-hint{color:#a6b6c8;font-size:11px;margin:9px 0}
+.neural-entries{display:grid;gap:4px}
+.neural-entries.cranial-entries{grid-template-columns:1fr 1fr}
+.neural-entries button{display:flex;align-items:center;text-align:right;gap:7px;border:1px solid #2c3c50;padding:6px;border-radius:7px;background:#18263a;font-size:11px}
+.neural-entries button:hover{border-color:#b6ccda}
+.neural-guide button:focus-visible,.neural-guide a:focus-visible{outline:2px solid #f9d786;outline-offset:2px}
+.nerve-number{color:#f6d080;font-family:monospace;min-width:23px;text-align:center;font-weight:700}
+.tract-swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.neural-explanation{border-top:1px solid #364458;margin-top:12px;padding-top:10px}
+.neural-explanation h3{font-size:15px;color:#f5dab0;margin:0}
+.neural-english{color:#99afc5;font-size:11px;text-align:right;margin-bottom:7px}
+.neural-explanation p{margin:8px 0}
+.neural-explanation a{color:#9ed4e5;text-decoration:underline;font-size:11px}
+.neural-disclaimer{font-size:10px;color:#9baabe;border-top:1px solid #364458;padding-top:9px;margin-top:10px}
+@media(max-width:1023px){.neural-guide{max-height:43vh;padding:10px}.neural-guide-heading{font-size:13px}.neural-entries button{padding:5px}.neural-guide-tabs{margin-bottom:5px}}

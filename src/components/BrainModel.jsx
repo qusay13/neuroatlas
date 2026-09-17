@@ -17,6 +17,7 @@ regions.forEach((region) =>
 );
 
 function getRegionData(obj) {
+  if (obj.userData?.anatomyRole) return null;
   let cur = obj;
   while (cur) {
     if (MESH_TO_REGION.has(normalizeName(cur.name))) {
@@ -32,6 +33,7 @@ function getRegionData(obj) {
 }
 
 const BRAIN_MODEL_URL = `${import.meta.env.BASE_URL}brain.glb`;
+const skipRaycast = () => {};
 
 const NATURAL_CORTEX_COLOR = "#d5c7b8";
 const NATURAL_CEREBELLUM_COLOR = "#c7b8a7";
@@ -50,10 +52,16 @@ export default function BrainModel({
   selectedRegion,
   hoveredRegion,
   cortexOpacity = 1.0,
+  showTracts = false,
+  isIsolatingTracts = false,
+  neuralMode = null,
+  selectedStructureId = null,
+  onSelectStructure,
 }) {
   const { scene } = useGLTF(BRAIN_MODEL_URL);
   const meshMaterials = useRef(new Map());
   const meshColors = useRef(new Map());
+  const originalMaterials = useRef(new Map());
 
   // تهيئة المواد لجميع الأجزاء بحالة النسيج العصبي الطبيعي السليم
   useEffect(() => {
@@ -62,6 +70,13 @@ export default function BrainModel({
 
     scene.traverse((child) => {
       if (!child.isMesh) return;
+      originalMaterials.current.set(child.uuid, child.material);
+      if (child.userData.anatomyRole) {
+        child.material = child.material.clone();
+        meshMaterials.current.set(child.uuid, child.material);
+        child.renderOrder = 0;
+        return;
+      }
 
       const region = getRegionData(child);
       const lobeKey = region?.lobe || "subcortical";
@@ -80,19 +95,25 @@ export default function BrainModel({
 
       const mat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(naturalColor),
-        roughness: 0.52,
-        metalness: 0.04,
-        bumpScale: 0.04,
-        transparent: cortexOpacity < 0.99,
-        opacity: cortexOpacity,
-        depthWrite: cortexOpacity >= 0.99,
+        roughness: 0.7,
+        metalness: 0,
       });
 
       meshMaterials.current.set(child.uuid, mat);
       child.material = mat;
       child.renderOrder = 1;
     });
-  }, [scene, cortexOpacity]);
+    const materials = meshMaterials.current;
+    const originals = originalMaterials.current;
+    return () => {
+      scene.traverse((child) => {
+        if (originals.has(child.uuid)) child.material = originals.get(child.uuid);
+      });
+      materials.forEach((material) => material.dispose());
+      materials.clear();
+      originals.clear();
+    };
+  }, [scene]);
 
   // تحديث حالات التحديد والتحويم والحالة الطبيعية
   useEffect(() => {
@@ -100,6 +121,32 @@ export default function BrainModel({
 
     scene.traverse((child) => {
       if (!child.isMesh) return;
+      if (child.userData.anatomyRole) {
+        const mat = meshMaterials.current.get(child.uuid);
+        if (!mat) return;
+        const selected = child.userData.structureId === selectedStructureId;
+        mat.color.copy(originalMaterials.current.get(child.uuid).color);
+        if (selectedStructureId && child.userData.structureId && !selected) mat.color.multiplyScalar(0.5);
+        mat.emissive.set(selected ? "#ffbe55" : "#000000");
+        mat.emissiveIntensity = selected ? 0.65 : 0;
+        if (child.userData.anatomyRole !== "illustrative_tract") {
+          child.visible = neuralMode !== "tracts";
+          child.raycast = child.visible ? THREE.Mesh.prototype.raycast : skipRaycast;
+          return;
+        }
+      }
+      if (child.userData.anatomyRole === "illustrative_tract") {
+        const label = child.userData.label || "";
+        const lobes = label.startsWith("Arcuate") ? ["frontal", "temporal", "parietal"]
+          : label.startsWith("Cingulum") ? ["limbic", "frontal", "parietal"]
+          : label.startsWith("Inferior") ? ["temporal", "occipital"]
+          : label.startsWith("Uncinate") ? ["frontal", "temporal"]
+          : ["subcortical", "frontal", "parietal"];
+        child.visible = neuralMode !== "cranial" && (showTracts || cortexOpacity < 0.99 || isIsolatingTracts)
+          && (!isIsolatingTracts || !isLobeSelected || lobes.includes(selectedLobeKey));
+        child.raycast = child.visible ? THREE.Mesh.prototype.raycast : skipRaycast;
+        return;
+      }
       const mat = meshMaterials.current.get(child.uuid);
       const colorData = meshColors.current.get(child.uuid);
       if (!mat || !colorData) return;
@@ -109,7 +156,11 @@ export default function BrainModel({
       const isRegionActive = selectedRegion && region?.id === selectedRegion.id;
       const isHovered = hoveredRegion && region?.id === hoveredRegion.id;
 
-      mat.transparent = cortexOpacity < 0.99;
+      const transparent = cortexOpacity < 0.99;
+      if (mat.transparent !== transparent) {
+        mat.transparent = transparent;
+        mat.needsUpdate = true;
+      }
       mat.opacity = cortexOpacity;
       mat.depthWrite = cortexOpacity >= 0.99;
 
@@ -143,13 +194,18 @@ export default function BrainModel({
         mat.color.set(colorData.naturalColor);
         mat.emissive.set("#000000");
         mat.emissiveIntensity = 0;
-        mat.roughness = 0.52;
+        mat.roughness = 0.7;
       }
     });
-  }, [selectedLobeKey, selectedRegion, hoveredRegion, cortexOpacity, scene]);
+  }, [selectedLobeKey, selectedRegion, hoveredRegion, cortexOpacity, scene, showTracts, isIsolatingTracts, neuralMode, selectedStructureId]);
 
   const handlePointerOver = useCallback(
     (e) => {
+      if (e.object.userData.structureId) {
+        e.stopPropagation();
+        document.body.style.cursor = "pointer";
+        return;
+      }
       const region = getRegionData(e.object);
       if (!region) return;
       e.stopPropagation();
@@ -163,6 +219,10 @@ export default function BrainModel({
 
   const handlePointerOut = useCallback(
     (e) => {
+      if (e.object.userData.structureId) {
+        document.body.style.cursor = "auto";
+        return;
+      }
       const region = getRegionData(e.object);
       if (!region) return;
       e.stopPropagation();
@@ -176,12 +236,20 @@ export default function BrainModel({
 
   const handleClick = useCallback(
     (e) => {
+      // Prefer a neural hit behind the transparent cortex over its front surface.
+      const neuralHit = e.intersections.find((hit) => hit.object.userData.structureId);
+      const id = e.object.userData.structureId || (cortexOpacity < 0.99 && neuralHit?.object.userData.structureId);
+      if (id) {
+        e.stopPropagation();
+        onSelectStructure?.(id);
+        return;
+      }
       const region = getRegionData(e.object);
       if (!region) return;
       e.stopPropagation();
       onSelectRegion(region, e.point.clone());
     },
-    [onSelectRegion]
+    [onSelectRegion, onSelectStructure, cortexOpacity]
   );
 
   return (

@@ -27,6 +27,7 @@ dist-ssr
 *.zip
 *.tar.gz
 *.tmp
+*.blend1
 r1.png
 r2.png
 dti_preview_initial.png

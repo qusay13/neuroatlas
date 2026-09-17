@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Center } from "@react-three/drei";
 import BrainModel from "./components/BrainModel";
-import NeuralTracts from "./components/NeuralTracts";
+import NeuralGuide from "./components/NeuralGuide";
 import { neuroDatabase, wholeBrainData } from "./data/neuroDatabase";
 import regions from "./data/regions";
 
@@ -56,19 +56,64 @@ export default function App() {
   const [showTracts, setShowTracts] = useState(false);
   const [showPlanes, setShowPlanes] = useState(false);
   const [isTranslucent, setIsTranslucent] = useState(false);
+  const [neuralMode, setNeuralMode] = useState(null);
+  const [selectedStructureId, setSelectedStructureId] = useState(null);
 
   const controlsRef = useRef();
+
+  const inferiorView = () => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    controls.object.up.set(0, 0, -1);
+    controls.target.set(isMobile ? 0 : 0.65, isMobile ? 0 : -0.1, 0);
+    controls.object.position.set(controls.target.x, controls.target.y - (isMobile ? 8.5 : 7), 0.001);
+    controls.update();
+  };
+
+  const openNeuralGuide = (mode) => {
+    setNeuralMode(mode);
+    setSelectedStructureId(mode === "cranial" ? "cn-01" : "tract-arcuate");
+    setShowTracts(mode === "tracts");
+    setIsIsolatingTracts(false);
+    setSelectedLobeKey(null);
+    setSelectedRegion(null);
+    if (mode === "cranial") inferiorView();
+    else if (controlsRef.current) {
+      controlsRef.current.object.up.set(0, 1, 0);
+      controlsRef.current.reset();
+    }
+  };
+
+  const selectNeuralStructure = (id) => {
+    setSelectedStructureId(id);
+    const mode = id.startsWith("cn-") ? "cranial" : "tracts";
+    setNeuralMode(mode);
+    setShowTracts(mode === "tracts");
+    setIsIsolatingTracts(false);
+  };
+
+  const closeNeuralGuide = () => {
+    setNeuralMode(null);
+    setSelectedStructureId(null);
+    if (controlsRef.current) {
+      controlsRef.current.object.up.set(0, 1, 0);
+      controlsRef.current.reset();
+    }
+  };
 
   const currentLobe = selectedLobeKey
     ? neuroDatabase[selectedLobeKey] || wholeBrainData
     : wholeBrainData;
 
   const handleSelectLobe = (lobeKey) => {
+    closeNeuralGuide();
     setSelectedLobeKey(lobeKey);
     setSelectedRegion(null); // مسح التحديد الدقيق للعودة لنظرة الفص
   };
 
   const handleSelectRegionFrom3D = (region) => {
+    setNeuralMode(null);
+    setSelectedStructureId(null);
     setSelectedRegion(region);
     if (region && region.lobe) {
       setSelectedLobeKey(region.lobe);
@@ -76,7 +121,10 @@ export default function App() {
   };
 
   const resetCamera = () => {
+    setNeuralMode(null);
+    setSelectedStructureId(null);
     if (controlsRef.current) {
+      controlsRef.current.object.up.set(0, 1, 0);
       controlsRef.current.reset();
     }
     setSelectedLobeKey(null);
@@ -293,7 +341,7 @@ export default function App() {
               <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
               <span>
                 {activeNavSection === "explorer"
-                  ? "وضع الاتصال العصبي الوظيفي (fMRI/DTI) نشط"
+                  ? "عرض تشريحي تعليمي ثلاثي الأبعاد"
                   : activeNavSection === "anatomy"
                   ? "أطلس التشريح السريري والتنظيم الطوبوغرافي"
                   : activeNavSection === "psychiatry"
@@ -414,17 +462,24 @@ export default function App() {
                   <Suspense fallback={null}>
                     {/* مجسم الدماغ التشريحي المرجعي */}
                     <Center
-                      scale={isMobile ? 0.00030 : 0.00032}
+                      scale={isMobile ? 0.00026 : 0.00028}
                       position={isMobile ? [0, 0, 0] : [0.65, -0.1, 0]}
                     >
                       <BrainModel
+                        neuralMode={neuralMode}
+                        selectedStructureId={selectedStructureId}
+                        onSelectStructure={selectNeuralStructure}
+                        showTracts={showTracts}
+                        isIsolatingTracts={isIsolatingTracts}
                         selectedLobeKey={selectedLobeKey}
                         selectedRegion={selectedRegion}
                         hoveredRegion={hoveredRegion}
                         onSelectRegion={handleSelectRegionFrom3D}
                         onHoverRegion={setHoveredRegion}
                         cortexOpacity={
-                          isIsolatingTracts
+                          neuralMode === "tracts" ? 0.12
+                            : neuralMode === "cranial" ? (isTranslucent ? 0.12 : 1)
+                            : isIsolatingTracts
                             ? 0.18
                             : isTranslucent
                             ? 0.25
@@ -435,19 +490,13 @@ export default function App() {
                       />
                     </Center>
 
-                    {/* المسارات العصبية الحقيقية (DTI Fiber Tractography in World Space) */}
-                    <NeuralTracts
-                      visible={showTracts}
-                      selectedLobeKey={selectedLobeKey}
-                      isIsolating={isIsolatingTracts}
-                    />
                   </Suspense>
 
                   <OrbitControls
                     ref={controlsRef}
                     makeDefault
                     enablePan={false}
-                    autoRotate={!selectedRegion}
+                    autoRotate={!selectedRegion && !neuralMode}
                     autoRotateSpeed={0.6}
                   />
                 </Canvas>
@@ -571,7 +620,7 @@ export default function App() {
               <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-space-md items-end lg:items-center my-1 sm:my-2 pointer-events-none min-h-0">
                 {/* دليل التدوير باللمس أو الماوس (Bottom-Right Cue) */}
                 <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end pointer-events-none pb-1">
-                  <div className="inline-flex items-center gap-1 sm:gap-space-xs px-2.5 sm:px-space-md py-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20 text-[11px] sm:text-xs">
+                  <div className={`${neuralMode ? "hidden" : "inline-flex"} items-center gap-1 sm:gap-space-xs px-2.5 sm:px-space-md py-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20 text-[11px] sm:text-xs`}>
                     <span className="material-symbols-outlined text-secondary text-[16px] sm:text-[18px]">
                       touch_app
                     </span>
@@ -586,8 +635,15 @@ export default function App() {
                 </div>
 
                 {/* بطاقة الفحص السريري لسطح المكتب فقط (Desktop Only Floating Card) */}
-                <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 w-full flex-col pointer-events-auto">
-                  <ClinicalDetailsPanel
+                <div className={`${neuralMode ? "flex" : "hidden lg:flex"} lg:col-span-5 xl:col-span-4 w-full flex-col pointer-events-auto`}>
+                  {neuralMode ? <NeuralGuide
+                    mode={neuralMode}
+                    selectedId={selectedStructureId}
+                    onModeChange={openNeuralGuide}
+                    onSelect={selectNeuralStructure}
+                    onClose={closeNeuralGuide}
+                    onInferiorView={inferiorView}
+                  /> : <ClinicalDetailsPanel
                     currentLobe={currentLobe}
                     selectedRegion={selectedRegion}
                     activeTab={activeTab}
@@ -595,7 +651,7 @@ export default function App() {
                     isIsolatingTracts={isIsolatingTracts}
                     onToggleIsolate={handleToggleIsolate}
                     isMobileSheet={false}
-                  />
+                  />}
                 </div>
               </div>
 
@@ -609,12 +665,16 @@ export default function App() {
                         ? "text-on-surface bg-surface-container-high font-semibold"
                         : "text-on-surface-variant hover:bg-surface-container-high"
                     }`}
-                    onClick={() => setShowTracts(!showTracts)}
+                    onClick={() => neuralMode === "tracts" ? (closeNeuralGuide(), setShowTracts(false)) : openNeuralGuide("tracts")}
                   >
                     <span className="material-symbols-outlined text-secondary text-[15px]">
                       polyline
                     </span>
-                    <span>المسارات (DTI)</span>
+                    <span>الألياف ووظائفها</span>
+                  </button>
+
+                  <button className="px-2 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 bg-surface-container-high text-on-surface" onClick={() => openNeuralGuide("cranial")} aria-pressed={neuralMode === "cranial"}>
+                    الأعصاب القحفية I–XII
                   </button>
 
                   <button
@@ -654,6 +714,7 @@ export default function App() {
 
                 {/* اعتمادية المعايير السريرية */}
                 <div className="flex flex-col items-start gap-0.5 text-on-surface-variant/70 font-body-sm bg-surface-container-lowest/70 px-2.5 py-1 rounded-lg border border-outline-variant/10 text-[10px] sm:text-xs">
+                  <div>الألياف والأعصاب وجذع الدماغ تقريبية تعليمية؛ النصف المقابل مستكمل بالانعكاس.</div>
                   <div className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-secondary text-[14px]">
                       verified

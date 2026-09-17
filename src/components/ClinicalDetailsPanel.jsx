@@ -277,7 +277,7 @@ export default function ClinicalDetailsPanel({
             <span className="material-symbols-outlined text-[15px]">
               {isIsolatingTracts ? "flare" : "timeline"}
             </span>
-            <span>{isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار العصبي (DTI)"}</span>
+            <span>{isIsolatingTracts ? "إلغاء عزل المسار" : "عزل الألياف التعليمية"}</span>
           </button>
 
           {isMobileSheet && onClose && (
