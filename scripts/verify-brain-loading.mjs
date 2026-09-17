@@ -35,23 +35,25 @@ fs.mkdirSync('artifacts/loading',{recursive:true});
 try {
  const page=await browser.newPage();
  await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true});
- const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('Browser:',e.message);});
  await page.setRequestInterception(true);
- let held;let requests=0;
+ let held;let requests=0;let released=false;
  page.on('request',r=>{
-  if(r.url().endsWith('brain-optimized.glb')){requests++;held=r;return;}
+  if(r.url().endsWith('brain-optimized.glb')){requests++; if(released)return r.continue(); held=r;return;}
   if(r.url().startsWith('http://127.0.0.1:5174/') || r.url().startsWith('data:'))r.continue();else r.abort();
  });
+ const modelRequest=page.waitForRequest(r=>r.url().endsWith('brain-optimized.glb'));
  await page.goto('http://127.0.0.1:5174/neuroatlas/',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('.brain-loading');
  assert(await page.$eval('.brain-loading',e=>e.textContent.includes('جارٍ تجهيز')));
  await page.screenshot({path:'artifacts/loading/mobile-loading.png'});
+ await modelRequest;
  assert(held,'model request held to simulate slow download');
- await held.continue();
+ released=true;await held.continue();
  await page.waitForSelector('[data-model-ready="true"]',{timeout:30000});
  await page.waitForSelector('.brain-loading',{hidden:true});
  await page.screenshot({path:'artifacts/loading/mobile-ready.png'});
- assert.equal(requests,1,'preload and loader share one model download');
+ assert.equal(requests,1,'one model download');
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('Slow download: loading indicator visible, disappears on readiness; one model request; no JS errors.');
  // A separate page forces a failed GLB load, then verifies retry works.
