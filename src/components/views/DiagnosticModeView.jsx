@@ -230,7 +230,7 @@ export default function DiagnosticModeView({ onSelectLobeAndSwitchTo3D }) {
             <div className="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/20 space-y-2.5">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-base">science</span>
-                <h4 className="text-xs font-bold text-on-surface">الفحوصات السريرية الموصى بها فوراً:</h4>
+                <h4 className="text-xs font-bold text-on-surface">أمثلة تعليمية لفحوص قد تُستخدم حسب الحالة:</h4>
               </div>
               <ul className="space-y-1.5 text-xs text-on-surface-variant">
                 <li className="flex items-start gap-1.5">
@@ -250,6 +250,7 @@ export default function DiagnosticModeView({ onSelectLobeAndSwitchTo3D }) {
 
             {/* زر النقل للثلاثي الأبعاد */}
             <button
+              disabled={!selectedSymptoms.length}
               onClick={() => onSelectLobeAndSwitchTo3D(primaryLobe)}
               className="w-full py-2.5 px-4 rounded-xl bg-primary-container hover:bg-primary-container/80 text-on-primary-container font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
             >

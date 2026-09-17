@@ -4,7 +4,7 @@ import { useState } from "react";
 import { neuroDatabase } from "../../data/neuroDatabase";
 import regions from "../../data/regions";
 
-export const vascularTerritories = [
+const vascularTerritories = [
   {
     artery: "الشريان المخي الأمامي (ACA)",
     latin: "Arteria Cerebri Anterior",

@@ -48,8 +48,8 @@ try{
   console.log('Verified all 5 tract descriptions');
   await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true});
   await page.waitForSelector('canvas');
-  await clickText('الأعصاب القحفية I');
-  await page.click('[data-structure-id="cn-12"]');
+  await page.click('.mobile-tool-tabs button:nth-child(2)');
+  await page.click('.mobile-explorer-controls [data-structure-id="cn-12"]');
   await new Promise(r=>setTimeout(r,600));
   await page.screenshot({path:'artifacts/brain/cranial-mobile.png'});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'no horizontal overflow');

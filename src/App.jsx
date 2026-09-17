@@ -42,7 +42,6 @@ export default function App() {
 
   // Mobile responsive states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(null);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 1024 : false
@@ -53,6 +52,27 @@ export default function App() {
     window.addEventListener("resize", checkResize);
     return () => window.removeEventListener("resize", checkResize);
   }, []);
+
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!mobileMenuOpen || !isMobile) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const menu = menuRef.current;
+    menu.querySelector("button")?.focus();
+    const onKey = (event) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+      if (event.key === "Tab") {
+        const nodes = [...menu.querySelectorAll("button, input, a[href]")].filter(node => node.getClientRects().length);
+        const first = nodes[0], last = nodes[nodes.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", onKey); previousFocus?.focus(); };
+  }, [mobileMenuOpen, isMobile]);
 
   // الحالة المبدئية للمجسم: مصمت بحالته الطبيعية والمسارات مغلقة حتى يطلبها المستخدم
   const [showTracts, setShowTracts] = useState(false);
@@ -167,6 +187,11 @@ export default function App() {
 
       {/* ─── الشريط الجانبي الأيمن المتجاوب (Responsive Right Sidebar) ─── */}
       <aside
+        ref={menuRef}
+        inert={isMobile && !mobileMenuOpen ? true : undefined}
+        role={isMobile ? "dialog" : undefined}
+        aria-modal={isMobile && mobileMenuOpen ? true : undefined}
+        aria-label="أقسام الأطلس"
         className={`fixed right-0 top-0 h-full w-72 max-w-[85vw] bg-surface-container-low z-50 flex flex-col pt-space-md pb-space-lg shadow-2xl lg:shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-l border-outline-variant/20 transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         }`}
@@ -193,7 +218,7 @@ export default function App() {
               className="lg:hidden p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container"
               title="إغلاق القائمة"
             >
-              <span className="material-symbols-outlined text-xl">close</span>
+              <span className="text-xl" aria-hidden="true">×</span>
             </button>
           </div>
         </div>
@@ -325,7 +350,7 @@ export default function App() {
               aria-label="القائمة الرئيسية"
               title="القائمة الرئيسية"
             >
-              <span className="material-symbols-outlined text-[22px]">menu</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
 
             <span className="lg:hidden text-sm font-semibold">{[...NAV_ITEMS_ACADEMIC, ...NAV_ITEMS_TOOLS].find(item => item.id === activeNavSection)?.label}</span>
@@ -339,7 +364,7 @@ export default function App() {
                 <span className="xs:hidden">3D</span>
               </button>
             ) : (
-              <div className="hidden sm:flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-space-sm py-1.5 rounded">
+              <div className="hidden lg:flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-space-sm py-1.5 rounded">
                 <span className="material-symbols-outlined text-[16px] text-secondary">
                   location_searching
                 </span>
@@ -447,6 +472,7 @@ export default function App() {
               {/* طبقة الكانفاس الحقيقية لمجسم الدماغ (3D Canvas Layer) */}
               <div className="brain-viewport absolute inset-0 z-0 cursor-grab active:cursor-grabbing">
                 <Canvas
+                  frameloop={isMobile ? "demand" : "always"}
                   dpr={isMobile ? [1, 1.5] : [1, 2]}
                   camera={{ position: [0, 0, 7.5], fov: 42 }}
                   style={{ background: "transparent" }}
@@ -513,6 +539,7 @@ export default function App() {
                 </Canvas>
               </div>
 
+              {!isMobile && <>
               {/* ─── الشريط العلوي العائم (Top HUD Bar) ─── */}
               <header className="desktop-explorer-ui relative z-20 flex flex-col gap-1.5 pointer-events-auto w-full">
                 <div className="flex items-center justify-between gap-1.5 w-full">
@@ -571,60 +598,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* ─── اللوحة السريرية المرفوعة للأعلى بالجوال (Raised Mobile Clinical Bar) ─── */}
-                <div className="lg:hidden w-full bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-2 px-3 shadow-lg flex items-center justify-between gap-2 pointer-events-auto">
-                  <div
-                    className="flex items-center gap-2 min-w-0 cursor-pointer"
-                    onClick={() => setMobileDetailsOpen(true)}
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
-                      style={{ backgroundColor: selectedLobeKey ? currentLobe.highlightColor : "#d6cbbe" }}
-                    />
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-on-surface truncate">
-                        {selectedRegion
-                          ? selectedRegion.name_ar
-                          : selectedLobeKey
-                          ? currentLobe.title
-                          : "كامل الدماغ البشري (الحالة الطبيعية)"}
-                      </div>
-                      <div className="text-[10px] text-outline font-mono truncate">
-                        {selectedRegion
-                          ? selectedRegion.name_en
-                          : selectedLobeKey
-                          ? `${currentLobe.latin} • ${currentLobe.volume}`
-                          : "Anatomical Baseline · 100% Volume"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {selectedLobeKey && (
-                      <button
-                        onClick={handleToggleIsolate}
-                        className={`p-1.5 rounded-lg text-xs transition-colors flex items-center justify-center ${
-                          isIsolatingTracts
-                            ? "bg-secondary text-on-secondary shadow-sm"
-                            : "bg-surface-container-high text-on-surface"
-                        }`}
-                        title={isIsolatingTracts ? "إلغاء عزل المسار" : "عزل المسار"}
-                      >
-                        <span className="material-symbols-outlined text-[17px]">
-                          {isIsolatingTracts ? "flare" : "timeline"}
-                        </span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => setMobileDetailsOpen(true)}
-                      className="px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">info</span>
-                      <span>اللوحة السريرية</span>
-                    </button>
-                  </div>
-                </div>
               </header>
 
               {/* ─── مساحة التفاعل الرئيسية: بطاقة الفحص السريري لسطح المكتب + تلميح الفأرة ─── */}
@@ -740,6 +713,7 @@ export default function App() {
                   </div>
                 </div>
               </footer>
+              </>}
               {isMobile && <MobileExplorer
                 currentLobe={currentLobe} selectedRegion={selectedRegion} selectedLobeKey={selectedLobeKey}
                 onSelectLobe={handleSelectLobe} panel={mobilePanel} setPanel={setMobilePanel}
@@ -847,31 +821,7 @@ export default function App() {
         </footer>
       </div>
 
-      {/* ─── ورقة التفاصيل السريرية المنزلقة للجوال (Mobile Clinical Bottom Sheet Modal) ─── */}
-      {mobileDetailsOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-fade-in">
-          {/* خلفية معتمة تتيح النقر للإغلاق */}
-          <div
-            onClick={() => setMobileDetailsOpen(false)}
-            className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
-            aria-label="إغلاق اللوحة السريرية"
-          />
 
-          {/* محتوى الورقة المنزلقة */}
-          <div className="relative z-10 w-full animate-slide-up">
-            <ClinicalDetailsPanel
-              currentLobe={currentLobe}
-              selectedRegion={selectedRegion}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              isIsolatingTracts={isIsolatingTracts}
-              onToggleIsolate={handleToggleIsolate}
-              onClose={() => setMobileDetailsOpen(false)}
-              isMobileSheet={true}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
