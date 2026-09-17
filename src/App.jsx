@@ -1,19 +1,20 @@
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense, lazy } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Center } from "@react-three/drei";
+import MobileExplorer from "./components/MobileExplorer";
 import BrainModel from "./components/BrainModel";
 import NeuralGuide from "./components/NeuralGuide";
 import { neuroDatabase, wholeBrainData } from "./data/neuroDatabase";
 import regions from "./data/regions";
 
 // استيراد الأقسام السريرية والأدوات التحليلية الجديدة
-import ClinicalAnatomyView from "./components/views/ClinicalAnatomyView";
-import ClinicalCasesView from "./components/views/ClinicalCasesView";
-import MedicalGlossaryView from "./components/views/MedicalGlossaryView";
-import DiagnosticModeView from "./components/views/DiagnosticModeView";
-import NeuroScalesView from "./components/views/NeuroScalesView";
-import ResearchGuideView from "./components/views/ResearchGuideView";
-import PsychiatricDisordersView from "./components/views/PsychiatricDisordersView";
+const ClinicalAnatomyView = lazy(() => import("./components/views/ClinicalAnatomyView"));
+const ClinicalCasesView = lazy(() => import("./components/views/ClinicalCasesView"));
+const MedicalGlossaryView = lazy(() => import("./components/views/MedicalGlossaryView"));
+const DiagnosticModeView = lazy(() => import("./components/views/DiagnosticModeView"));
+const NeuroScalesView = lazy(() => import("./components/views/NeuroScalesView"));
+const ResearchGuideView = lazy(() => import("./components/views/ResearchGuideView"));
+const PsychiatricDisordersView = lazy(() => import("./components/views/PsychiatricDisordersView"));
 import ClinicalDetailsPanel from "./components/ClinicalDetailsPanel";
 
 const NAV_ITEMS_ACADEMIC = [
@@ -42,6 +43,7 @@ export default function App() {
   // Mobile responsive states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState(null);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 1024 : false
   );
@@ -71,6 +73,7 @@ export default function App() {
   };
 
   const openNeuralGuide = (mode) => {
+    setMobilePanel("neural");
     setNeuralMode(mode);
     setSelectedStructureId(mode === "cranial" ? "cn-01" : "tract-arcuate");
     setShowTracts(mode === "tracts");
@@ -85,6 +88,7 @@ export default function App() {
   };
 
   const selectNeuralStructure = (id) => {
+    setMobilePanel("neural");
     setSelectedStructureId(id);
     const mode = id.startsWith("cn-") ? "cranial" : "tracts";
     setNeuralMode(mode);
@@ -107,6 +111,7 @@ export default function App() {
 
   const handleSelectLobe = (lobeKey) => {
     closeNeuralGuide();
+    setMobilePanel(null);
     setSelectedLobeKey(lobeKey);
     setSelectedRegion(null); // مسح التحديد الدقيق للعودة لنظرة الفص
   };
@@ -114,6 +119,7 @@ export default function App() {
   const handleSelectRegionFrom3D = (region) => {
     setNeuralMode(null);
     setSelectedStructureId(null);
+    setMobilePanel(null);
     setSelectedRegion(region);
     if (region && region.lobe) {
       setSelectedLobeKey(region.lobe);
@@ -129,6 +135,8 @@ export default function App() {
     }
     setSelectedLobeKey(null);
     setSelectedRegion(null);
+    setMobilePanel(null);
+    setShowPlanes(false);
     setShowTracts(false);
     setIsTranslucent(false);
     setIsIsolatingTracts(false);
@@ -293,11 +301,11 @@ export default function App() {
           })}
         </nav>
 
-        {/* مؤشر دقة الاسترجاع الحجمي */}
+        {/* مؤشر نوع النموذج */}
         <div className="px-space-md pt-space-sm border-t-0 bg-surface-container-lowest mx-space-sm rounded-xl p-space-sm">
           <div className="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm mb-1">
-            <span>دقة الاسترجاع الحجمي</span>
-            <span className="font-mono text-secondary">0.4mm³</span>
+            <span>نوع النموذج</span>
+            <span className="font-mono text-secondary">تعليمي تقريبي</span>
           </div>
           <div className="w-full bg-surface-container-high h-1 rounded-full overflow-hidden">
             <div className="bg-secondary h-full w-[88%]"></div>
@@ -308,7 +316,7 @@ export default function App() {
       {/* ─── الحيز الرئيسي الأيسر (Left/Center Content) ─── */}
       <div className="lg:pr-72 pr-0 w-full min-w-0 transition-all">
         {/* البار العلوي الأفقي (Top Horizontal Header) */}
-        <header className="fixed top-0 lg:right-72 right-0 left-0 h-14 sm:h-16 bg-surface/85 backdrop-blur-xl shadow-sm z-40 flex items-center justify-between px-3 sm:px-6 border-b border-outline-variant/20">
+        <header className="app-header fixed top-0 lg:right-72 right-0 left-0 h-14 sm:h-16 bg-surface/85 backdrop-blur-xl shadow-sm z-40 flex items-center justify-between px-3 sm:px-6 border-b border-outline-variant/20">
           <div className="flex items-center gap-2 sm:gap-4">
             {/* زر فتح القائمة الجانبية للجوال */}
             <button
@@ -320,6 +328,7 @@ export default function App() {
               <span className="material-symbols-outlined text-[22px]">menu</span>
             </button>
 
+            <span className="lg:hidden text-sm font-semibold">{[...NAV_ITEMS_ACADEMIC, ...NAV_ITEMS_TOOLS].find(item => item.id === activeNavSection)?.label}</span>
             {activeNavSection !== "explorer" ? (
               <button
                 onClick={() => setActiveNavSection("explorer")}
@@ -334,7 +343,7 @@ export default function App() {
                 <span className="material-symbols-outlined text-[16px] text-secondary">
                   location_searching
                 </span>
-                <span className="font-mono">MNI152: [X:+14, Y:-28, Z:+42]</span>
+                <span className="font-mono">نموذج تشريحي تعليمي</span>
               </div>
             )}
             <div className="hidden xl:flex items-center gap-space-xs text-outline font-label-sm text-label-sm">
@@ -359,7 +368,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden lg:flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setActiveNavSection("diagnostic_mode")}
               className={`h-8 sm:h-9 px-2 sm:px-3 rounded flex items-center gap-1 sm:gap-1.5 text-xs transition-colors ${
@@ -396,7 +405,8 @@ export default function App() {
           <div className="flex flex-col w-full relative -mt-space-sm sm:-mt-space-lg">
             {activeNavSection === "explorer" ? (
               /* إطار فضاء العمل ثلاثي الأبعاد (100vh spatial viewport shell) */
-              <div className="relative w-full h-[calc(100vh-4.5rem)] min-h-[560px] overflow-hidden rounded-xl bg-surface-container-lowest flex flex-col justify-between p-2 sm:p-4 lg:p-gutter-desktop shadow-2xl border border-outline-variant/30">
+              <div className="explorer-shell relative w-full h-[calc(100vh-4.5rem)] min-h-[560px] overflow-hidden rounded-xl bg-surface-container-lowest flex flex-col justify-between p-2 sm:p-4 lg:p-gutter-desktop shadow-2xl border border-outline-variant/30">
+              {isMobile && <div className="mobile-explorer-heading"><span>استكشف الدماغ</span><span>اسحب للتدوير · باعد بإصبعين للتكبير</span></div>}
               {/* شبكة الإحداثيات الاستريوتاكتية الدقيقة (Stereotaxic Grid Overlay) */}
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -435,8 +445,9 @@ export default function App() {
               </div>
 
               {/* طبقة الكانفاس الحقيقية لمجسم الدماغ (3D Canvas Layer) */}
-              <div className="absolute inset-0 z-0 cursor-grab active:cursor-grabbing">
+              <div className="brain-viewport absolute inset-0 z-0 cursor-grab active:cursor-grabbing">
                 <Canvas
+                  dpr={isMobile ? [1, 1.5] : [1, 2]}
                   camera={{ position: [0, 0, 7.5], fov: 42 }}
                   style={{ background: "transparent" }}
                   gl={{
@@ -496,14 +507,14 @@ export default function App() {
                     ref={controlsRef}
                     makeDefault
                     enablePan={false}
-                    autoRotate={!selectedRegion && !neuralMode}
+                    autoRotate={!isMobile && !selectedRegion && !neuralMode}
                     autoRotateSpeed={0.6}
                   />
                 </Canvas>
               </div>
 
               {/* ─── الشريط العلوي العائم (Top HUD Bar) ─── */}
-              <header className="relative z-20 flex flex-col gap-1.5 pointer-events-auto w-full">
+              <header className="desktop-explorer-ui relative z-20 flex flex-col gap-1.5 pointer-events-auto w-full">
                 <div className="flex items-center justify-between gap-1.5 w-full">
                   {/* شريط اختيار الفصوص السريع (Lobe Quick-Selection Strip) */}
                   <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
@@ -549,13 +560,13 @@ export default function App() {
                   <div className="hidden 2xl:flex items-center gap-space-md p-1.5 px-space-md rounded-lg bg-surface-container-low/75 backdrop-blur-md shadow-sm border border-outline-variant/20 shrink-0">
                     <div className="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm">
                       <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
-                      <span>العرض: 3D Reconstructed Mesh (MNI Standard)</span>
+                      <span>العرض: نموذج تعليمي تقريبي</span>
                     </div>
                     <div className="h-3 w-0.5 bg-surface-container-highest"></div>
                     <div className="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm font-mono">
-                      <span>FOV: 220mm</span>
+                      <span>غير مخصص للقياس</span>
                       <span className="opacity-40">|</span>
-                      <span>ISO: 0.5T Submillimeter</span>
+                      <span>3D</span>
                     </div>
                   </div>
                 </div>
@@ -617,7 +628,7 @@ export default function App() {
               </header>
 
               {/* ─── مساحة التفاعل الرئيسية: بطاقة الفحص السريري لسطح المكتب + تلميح الفأرة ─── */}
-              <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-space-md items-end lg:items-center my-1 sm:my-2 pointer-events-none min-h-0">
+              <div className="desktop-explorer-ui relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-space-md items-end lg:items-center my-1 sm:my-2 pointer-events-none min-h-0">
                 {/* دليل التدوير باللمس أو الماوس (Bottom-Right Cue) */}
                 <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end pointer-events-none pb-1">
                   <div className={`${neuralMode ? "hidden" : "inline-flex"} items-center gap-1 sm:gap-space-xs px-2.5 sm:px-space-md py-1 rounded-lg bg-surface-container-low/90 backdrop-blur-md shadow-md w-fit pointer-events-auto border border-outline-variant/20 text-[11px] sm:text-xs`}>
@@ -629,7 +640,7 @@ export default function App() {
                     </span>
                     <span className="hidden sm:inline text-outline mx-1">|</span>
                     <span className="hidden sm:inline text-on-surface-variant">
-                      انقر على التراكيب للتشخيص الفوري
+                      انقر على التراكيب لقراءة وظائفها
                     </span>
                   </div>
                 </div>
@@ -656,7 +667,7 @@ export default function App() {
               </div>
 
               {/* ─── شريط الأدوات السفلي العائم والمراجع (Bottom Controls HUD) ─── */}
-              <footer className="relative z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 sm:pt-space-sm pointer-events-auto">
+              <footer className="desktop-explorer-ui relative z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 sm:pt-space-sm pointer-events-auto">
                 {/* أزرار التحكم في طبقات المنظور */}
                 <div className="flex items-center gap-1 bg-surface-container-low/85 backdrop-blur-md p-1 rounded-lg shadow-md border border-outline-variant/20 overflow-x-auto max-w-full scrollbar-none">
                   <button
@@ -729,10 +740,22 @@ export default function App() {
                   </div>
                 </div>
               </footer>
+              {isMobile && <MobileExplorer
+                currentLobe={currentLobe} selectedRegion={selectedRegion} selectedLobeKey={selectedLobeKey}
+                onSelectLobe={handleSelectLobe} panel={mobilePanel} setPanel={setMobilePanel}
+                neuralMode={neuralMode} selectedStructureId={selectedStructureId}
+                openNeuralGuide={openNeuralGuide} selectNeuralStructure={selectNeuralStructure}
+                closeNeuralGuide={closeNeuralGuide} inferiorView={inferiorView}
+                showPlanes={showPlanes} setShowPlanes={setShowPlanes}
+                isTranslucent={isTranslucent} setIsTranslucent={setIsTranslucent} resetCamera={resetCamera}
+                activeTab={activeTab} setActiveTab={setActiveTab}
+                isIsolatingTracts={isIsolatingTracts} onToggleIsolate={handleToggleIsolate}
+              />}
             </div>
             ) : (
               /* إطار عارض الأقسام السريرية والأدوات التحليلية */
               <div className="relative w-full min-h-[calc(100vh-4.5rem)] overflow-x-hidden rounded-xl bg-surface-container-lowest shadow-2xl border border-outline-variant/30 flex flex-col">
+                <Suspense fallback={<p className="p-6" role="status">جارٍ تحميل القسم…</p>}>
                 {activeNavSection === "anatomy" && (
                   <ClinicalAnatomyView
                     onSelectLobeAndSwitchTo3D={(lobe) => {
@@ -772,22 +795,21 @@ export default function App() {
                 )}
                 {activeNavSection === "scales" && <NeuroScalesView />}
                 {activeNavSection === "research_guide" && <ResearchGuideView />}
+                </Suspense>
               </div>
             )}
           </div>
         </main>
 
         {/* ─── الفوتر الأكاديمي السريري (Academic Clinical Footer) ─── */}
-        <footer className="w-full bg-surface-container-lowest py-space-md sm:py-space-xl px-4 sm:px-6 lg:px-gutter-desktop mt-space-md sm:mt-space-xl border-t border-outline-variant/20">
+        <footer className="academic-footer w-full bg-surface-container-lowest py-space-md sm:py-space-xl px-4 sm:px-6 lg:px-gutter-desktop mt-space-md sm:mt-space-xl border-t border-outline-variant/20">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-space-lg text-right font-body-sm text-body-sm">
             <div className="space-y-space-xs">
               <div className="font-headline-sm text-headline-sm text-on-surface">
                 أطلس الدماغ التفاعلي | NeuroAtlas
               </div>
               <p className="text-on-surface-variant leading-relaxed">
-                منصة سريرية وبحثية متقدمة مخصصة لجراحي الأعصاب، أطباء الدماغ والأعصاب، والباحثين في
-                العلوم العصبية المعرفية. تعتمد على معايير الإحداثيات الاستريوتاكتية الفضائية
-                المعتمدة دولياً.
+                منصة تعليمية لاستكشاف تشريح الدماغ ووظائفه. المسارات والأعصاب وجذع الدماغ إضافات تقريبية، والنصف المقابل مستكمل بالانعكاس؛ النموذج غير مسجل على أطلس MNI أو Talairach.
               </p>
             </div>
             <div className="space-y-space-xs">

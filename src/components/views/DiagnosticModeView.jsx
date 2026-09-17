@@ -189,24 +189,23 @@ export default function DiagnosticModeView({ onSelectLobeAndSwitchTo3D }) {
                 التموضع التشريحي المرجّح (Top Localization)
               </span>
               <span className="px-2 py-0.5 rounded text-xs font-mono bg-secondary/15 text-secondary font-bold">
-                {Math.round((sortedLobes[0][1] / totalScore) * 100)}% احتمالية
+                {Math.round((sortedLobes[0][1] / totalScore) * 100)}% من الأوزان
               </span>
             </div>
 
             <div>
               <h2 className="text-xl font-bold font-headline-sm text-on-surface">
-                {lobeTitles[primaryLobe]}
+                {selectedSymptoms.length ? lobeTitles[primaryLobe] : "اختر أعراضًا لبدء المقارنة"}
               </h2>
               <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                بناءً على الأعراض المدخلة، تشير الأدلة السريرية بأعلى درجة تطابق إلى وجود الآفة أو
-                العطل الوظيفي في نطاق هذا الفص والمسارات العصبية المنطلقة منه.
+                هذه درجات نسبية ناتجة عن جمع أوزان تعليمية للأعراض المختارة، وليست احتمالات تشخيصية مثبتة أو قياسًا لوجود آفة.
               </p>
             </div>
 
             {/* أشرطة الاحتمالية النسبية لجميع الفصوص */}
             <div className="space-y-2.5 pt-2">
               <h4 className="text-xs font-mono text-outline uppercase tracking-wider">
-                توزيع الاحتمالات الطوبوغرافية
+                توزيع درجات الترجيح التعليمية
               </h4>
               {sortedLobes.map(([lobe, score]) => {
                 const pct = Math.round((score / totalScore) * 100);

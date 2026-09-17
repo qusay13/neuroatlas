@@ -10,10 +10,11 @@ export default function ClinicalDetailsPanel({
   onToggleIsolate,
   onClose,
   isMobileSheet = false,
+  isInlineMobile = false,
 }) {
   return (
     <div
-      className={`relative w-full flex flex-col bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 overflow-hidden shadow-2xl ${
+      className={`${isInlineMobile ? "clinical-inline" : ""} relative w-full flex flex-col bg-surface-container-low/95 backdrop-blur-xl border border-outline-variant/30 overflow-hidden shadow-2xl ${
         isMobileSheet
           ? "rounded-t-2xl max-h-[88vh] h-[88vh]"
           : "rounded-xl h-[580px] max-h-[68vh]"
@@ -34,7 +35,7 @@ export default function ClinicalDetailsPanel({
           </span>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-[11px] text-secondary font-mono">
+            <div className="inspection-status flex items-center gap-1 text-[11px] text-secondary font-mono">
               <span
                 className={`w-1.5 h-1.5 rounded-full bg-secondary ${
                   isIsolatingTracts ? "bg-tertiary" : "animate-ping"
@@ -91,7 +92,7 @@ export default function ClinicalDetailsPanel({
       </div>
 
       {/* ─── أزرار التبويبات الثلاثة ─── */}
-      <div className="flex items-center bg-surface-container-low px-3 sm:px-4 gap-2 pt-1 border-b border-outline-variant/20 overflow-x-auto scrollbar-none shrink-0">
+      <div className="clinical-tabs flex items-center bg-surface-container-low px-3 sm:px-4 gap-2 pt-1 border-b border-outline-variant/20 overflow-x-auto scrollbar-none shrink-0">
         <button
           className={`py-2 px-2 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
             activeTab === "overview"
@@ -110,7 +111,7 @@ export default function ClinicalDetailsPanel({
           }`}
           onClick={() => setActiveTab("pathology")}
         >
-          المضاعفات السريرية والتأثير النفسي
+          الارتباطات السريرية
         </button>
         <button
           className={`py-2 px-2 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
@@ -181,7 +182,7 @@ export default function ClinicalDetailsPanel({
           </div>
         )}
 
-        {/* التبويب 2: المضاعفات السريرية والتأثير النفسي والسلوكي */}
+        {/* التبويب 2: الارتباطات السريرية والسلوكي */}
         {activeTab === "pathology" && (
           <div className="space-y-3">
             <div className="flex items-center gap-1.5 mb-1.5 text-tertiary">
@@ -261,7 +262,7 @@ export default function ClinicalDetailsPanel({
       {/* ─── أسفل البطاقة: الإحداثيات الاستريوتاكتية وزر العزل ─── */}
       <div className="p-2.5 sm:p-3 bg-surface-container-lowest/90 flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant/30 shrink-0">
         <div className="flex items-center gap-1 font-mono text-[11px] text-outline" dir="ltr">
-          <span className="text-secondary/80">TALAIRACH:</span>
+          <span className="text-secondary/80">مرجع وصفي:</span>
           <span className="text-on-surface font-semibold">{currentLobe.coords}</span>
         </div>
         <div className="flex items-center gap-2">
