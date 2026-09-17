@@ -3,6 +3,7 @@ import { useRef, useEffect, useCallback } from "react";
 import { useGLTF } from "@react-three/drei";
 import regions from "../data/regions";
 import { neuroDatabase } from "../data/neuroDatabase";
+import { MeshoptDecoder } from "meshoptimizer/decoder";
 import * as THREE from "three";
 
 const normalizeName = (str) => {
@@ -32,7 +33,7 @@ function getRegionData(obj) {
   return null;
 }
 
-const BRAIN_MODEL_URL = `${import.meta.env.BASE_URL}brain.glb`;
+const BRAIN_MODEL_URL = `${import.meta.env.BASE_URL}brain-optimized.glb`;
 const skipRaycast = () => {};
 
 const NATURAL_CORTEX_COLOR = "#d5c7b8";
@@ -46,6 +47,7 @@ function getNaturalColor(lobeKey) {
 }
 
 export default function BrainModel({
+  onReady,
   onSelectRegion,
   onHoverRegion,
   selectedLobeKey,
@@ -58,7 +60,7 @@ export default function BrainModel({
   selectedStructureId = null,
   onSelectStructure,
 }) {
-  const { scene } = useGLTF(BRAIN_MODEL_URL);
+  const { scene } = useGLTF(BRAIN_MODEL_URL, false, false, (loader) => loader.setMeshoptDecoder(MeshoptDecoder));
   const meshMaterials = useRef(new Map());
   const meshColors = useRef(new Map());
   const originalMaterials = useRef(new Map());
@@ -114,6 +116,8 @@ export default function BrainModel({
       originals.clear();
     };
   }, [scene]);
+
+  useEffect(() => { onReady?.(true); }, [scene, onReady]);
 
   // تحديث حالات التحديد والتحويم والحالة الطبيعية
   useEffect(() => {
@@ -262,4 +266,3 @@ export default function BrainModel({
   );
 }
 
-useGLTF.preload(BRAIN_MODEL_URL);

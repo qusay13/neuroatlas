@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, Suspense, lazy } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Center } from "@react-three/drei";
 import MobileExplorer from "./components/MobileExplorer";
+import BrainLoadBoundary from "./components/BrainLoadBoundary";
 import BrainModel from "./components/BrainModel";
 import NeuralGuide from "./components/NeuralGuide";
 import { neuroDatabase, wholeBrainData } from "./data/neuroDatabase";
@@ -42,6 +43,7 @@ export default function App() {
 
   // Mobile responsive states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(null);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 1024 : false
@@ -470,7 +472,13 @@ export default function App() {
               </div>
 
               {/* طبقة الكانفاس الحقيقية لمجسم الدماغ (3D Canvas Layer) */}
-              <div className="brain-viewport absolute inset-0 z-0 cursor-grab active:cursor-grabbing">
+              <div className="brain-viewport absolute inset-0 z-0 cursor-grab active:cursor-grabbing" aria-busy={!modelReady} data-model-ready={modelReady}>
+                <BrainLoadBoundary>
+                {!modelReady && <div className="brain-loading" role="status" aria-live="polite">
+                  <span className="brain-loading-spinner" aria-hidden="true" />
+                  <strong>جارٍ تجهيز نموذج الدماغ…</strong>
+                  <span>يمكنك تصفّح أقسام الأطلس أثناء التحميل.</span>
+                </div>}
                 <Canvas
                   frameloop={isMobile ? "demand" : "always"}
                   dpr={isMobile ? [1, 1.5] : [1, 2]}
@@ -503,6 +511,7 @@ export default function App() {
                       position={isMobile ? [0, 0, 0] : [0.65, -0.1, 0]}
                     >
                       <BrainModel
+                        onReady={setModelReady}
                         neuralMode={neuralMode}
                         selectedStructureId={selectedStructureId}
                         onSelectStructure={selectNeuralStructure}
@@ -537,6 +546,7 @@ export default function App() {
                     autoRotateSpeed={0.6}
                   />
                 </Canvas>
+                </BrainLoadBoundary>
               </div>
 
               {!isMobile && <>
